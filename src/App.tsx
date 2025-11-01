@@ -11,6 +11,7 @@ import PatientsList from "./pages/PatientsList";
 import PatientProfile from "./pages/PatientProfile";
 import AIAnalysis from "./pages/AIAnalysis";
 import DrugChecker from "./pages/DrugChecker";
+import AIChat from "./pages/AIChat";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="patient/:id" element={<PatientProfile />} />
                 <Route path="ai-analysis" element={<AIAnalysis />} />
                 <Route path="drug-checker" element={<DrugChecker />} />
+                <Route path="ai-chat" element={<AIChat />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
               

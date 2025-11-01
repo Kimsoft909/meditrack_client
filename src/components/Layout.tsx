@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ProfileModal } from '@/components/ProfileModal';
+import { NotificationsSheet } from '@/components/NotificationsSheet';
 import { 
   LayoutDashboard, 
   Users, 
@@ -15,7 +16,8 @@ import {
   PanelLeftOpen,
   Bell,
   Menu,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,6 +29,7 @@ const navItems = [
   { path: '/patients', label: 'Patients', icon: Users },
   { path: '/ai-analysis', label: 'AI Analysis', icon: FileText },
   { path: '/drug-checker', label: 'Drug Checker', icon: Pill },
+  { path: '/ai-chat', label: 'AI Chat', icon: Sparkles },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -42,6 +45,7 @@ export const Layout = () => {
   });
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -206,7 +210,12 @@ export const Layout = () => {
 
             <div className="flex items-center gap-3">
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative h-9 w-9">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative h-9 w-9"
+                onClick={() => setNotificationsOpen(true)}
+              >
                 <Bell className="h-4 w-4" />
                 <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
                   3
@@ -245,6 +254,9 @@ export const Layout = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Notifications Sheet */}
+      <NotificationsSheet open={notificationsOpen} onOpenChange={setNotificationsOpen} />
     </div>
   );
 };
