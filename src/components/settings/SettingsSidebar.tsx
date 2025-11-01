@@ -27,7 +27,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export const SettingsSidebar = React.memo<SettingsSidebarProps>(({ activeSection, onSectionChange }) => {
   return (
-    <nav className="w-48 border-r border-border bg-card/50 p-3 space-y-1">
+    <nav className="h-full w-48 bg-card border border-border rounded-lg p-3 space-y-1 overflow-hidden">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const isActive = activeSection === item.id;

@@ -64,8 +64,8 @@ const Settings = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
-        <div className="w-48 shrink-0">
+      <div className="flex-1 flex gap-6 min-h-0">
+        <div className="w-48 shrink-0 h-full overflow-hidden">
           <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
         </div>
         
