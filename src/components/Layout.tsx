@@ -1,6 +1,6 @@
 // Main app layout with sidebar navigation and top header
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,14 +9,14 @@ import {
   Pill, 
   Settings, 
   LogOut,
-  Menu,
-  X,
-  Bell,
-  User
+  PanelLeftClose,
+  PanelLeftOpen,
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,9 +26,23 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
+const SIDEBAR_STATE_KEY = 'meditrack-sidebar-state';
+
 export const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  
+  // Initialize sidebar state from localStorage, default to closed
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Persist sidebar state to localStorage
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(sidebarOpen));
+  }, [sidebarOpen]);
+
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
@@ -40,7 +54,7 @@ export const Layout = () => {
           ${sidebarOpen ? 'w-64' : 'w-16'}
         `}
       >
-        {/* Logo */}
+        {/* Logo & Toggle */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
@@ -50,14 +64,25 @@ export const Layout = () => {
               <span className="font-bold text-base text-foreground">MEDITRACK</span>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleSidebar}
+              >
+                {sidebarOpen ? (
+                  <PanelLeftClose className="h-4 w-4" />
+                ) : (
+                  <PanelLeftOpen className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>{sidebarOpen ? 'Close sidebar' : 'Open sidebar'}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Navigation */}
@@ -66,7 +91,7 @@ export const Layout = () => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             
-            return (
+            const linkContent = (
               <Link
                 key={item.path}
                 to={item.path}
@@ -84,21 +109,50 @@ export const Layout = () => {
                 {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
               </Link>
             );
+
+            // Show tooltip only when sidebar is collapsed
+            if (!sidebarOpen) {
+              return (
+                <Tooltip key={item.path}>
+                  <TooltipTrigger asChild>
+                    {linkContent}
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return linkContent;
           })}
         </nav>
 
         {/* Logout */}
         <div className="absolute bottom-4 left-0 right-0 px-3">
-          <Button
-            variant="ghost"
-            className={`
-              w-full justify-start gap-3 text-muted-foreground hover:text-destructive
-              ${!sidebarOpen && 'justify-center'}
-            `}
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            {sidebarOpen && <span className="text-sm">Logout</span>}
-          </Button>
+          {!sidebarOpen ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center text-muted-foreground hover:text-destructive"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Logout</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span className="text-sm">Logout</span>
+            </Button>
+          )}
         </div>
       </aside>
 
