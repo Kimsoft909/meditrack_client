@@ -1,0 +1,374 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Clinical neutral base */
+    --background: 0 0% 98%;
+    --foreground: 215 25% 15%;
+
+    /* Clean card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    /* Popovers and dropdowns */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Medical blue primary - clinical trust */
+    --primary: 199 100% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 199 100% 32%;
+    
+    /* Teal secondary - health focus */
+    --secondary: 174 100% 29%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Soft muted backgrounds */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Subtle accents */
+    --accent: 210 20% 94%;
+    --accent-foreground: 215 25% 20%;
+
+    /* Clinical alerts */
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 100% 50%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* Borders and inputs - subtle */
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 199 100% 36%;
+
+    /* Compact radius for clinical feel */
+    --radius: 0.375rem;
+
+    /* Sidebar navigation */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 20%;
+    --sidebar-primary: 199 100% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 215 25% 20%;
+    --sidebar-border: 214 20% 90%;
+    --sidebar-ring: 199 100% 36%;
+  }
+
+  .dark {
+    --background: 215 28% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 199 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 199 100% 50%;
+
+    --secondary: 174 100% 35%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 25% 16%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 215 25% 18%;
+    --accent-foreground: 210 20% 95%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 100% 55%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 199 100% 45%;
+
+    --sidebar-background: 215 28% 10%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 199 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 16%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 215 20% 18%;
+    --sidebar-ring: 199 100% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 0.875rem; /* Compact base font */
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Document-Style Report Styling */
+  .report-document {
+    background: linear-gradient(to bottom, 
+      rgba(255,255,255,0.98) 0%, 
+      rgba(248,250,252,0.98) 100%);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    padding: 3rem;
+    max-width: 210mm;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .report-document::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 50% 50%, 
+        rgba(0,119,182,0.015) 0%, 
+        transparent 50%);
+    pointer-events: none;
+    border-radius: 8px;
+  }
+
+  .report-container {
+    background: hsl(var(--background));
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+
+  .report-header {
+    position: relative;
+    z-index: 1;
+  }
+
+  .report-section {
+    position: relative;
+    z-index: 1;
+    border-left: 3px solid rgba(0,119,182,0.15);
+    padding-left: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: hsl(var(--primary));
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .finding-highlight {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0,119,182,0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.75rem 0;
+  }
+
+  .patient-info-panel {
+    background: rgba(0,119,182,0.03);
+    border: 1px solid rgba(0,119,182,0.15);
+    border-radius: 8px;
+    padding: 1.25rem;
+    border-left: 4px solid hsl(var(--primary));
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .info-row.col-span-2 {
+    grid-column: span 2;
+  }
+
+  .info-label {
+    color: hsl(var(--muted-foreground));
+    min-width: 120px;
+    font-weight: 500;
+  }
+
+  .info-value {
+    color: hsl(var(--foreground));
+  }
+
+  .data-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 0.75rem;
+    background: rgba(0,119,182,0.05);
+    border-bottom: 2px solid rgba(0,119,182,0.2);
+    font-weight: 600;
+    color: hsl(var(--primary));
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .data-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(0,119,182,0.08);
+  }
+
+  .data-table tbody tr:hover {
+    background: rgba(0,119,182,0.02);
+  }
+
+  .metric-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .metric-label {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: hsl(var(--primary));
+  }
+
+  .recommendation-item {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(0,119,182,0.08);
+    border-radius: 6px;
+    padding: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .recommendation-item:hover {
+    background: rgba(255,255,255,0.8);
+    border-color: rgba(0,119,182,0.15);
+    transform: translateX(4px);
+  }
+
+  .report-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: 3rem;
+  }
+
+  /* Print Styles */
+  @media print {
+    .report-container {
+      box-shadow: none;
+      padding: 0;
+      background: white;
+    }
+    
+    .report-document {
+      box-shadow: none;
+      background: white;
+      max-width: 100%;
+    }
+    
+    .report-section {
+      page-break-inside: avoid;
+    }
+    
+    button, .no-print {
+      display: none !important;
+    }
+  }
+
+  /* Compact sizing utilities */
+  .text-compact {
+    @apply text-xs leading-tight;
+  }
+  
+  .btn-compact {
+    @apply h-7 px-2.5 text-xs;
+  }
+
+  /* Clinical status badges */
+  .status-critical {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  
+  .status-warning {
+    @apply bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/20;
+  }
+  
+  .status-stable {
+    @apply bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] border-[hsl(var(--success))]/20;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Medical-themed patterns */
+  .medical-grid-pattern {
+    background-image: 
+      linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .medical-gradient {
+    background: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.05) 0%, 
+      hsl(var(--background)) 50%, 
+      hsl(var(--primary) / 0.05) 100%
+    );
+  }
+
+  .medical-card {
+    @apply bg-gradient-to-br from-card to-card/50 border-primary/10;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .medical-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.03), transparent);
+    border-radius: 0 0 0 100%;
+  }
+}
