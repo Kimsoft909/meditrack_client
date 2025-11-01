@@ -11,7 +11,9 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Bell
+  Bell,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,20 +48,30 @@ export const Layout = () => {
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+          onClick={toggleSidebar}
+        />
+      )}
+
       {/* Floating Sidebar */}
       <aside 
         className={`
-          fixed left-4 top-4 bottom-4 
-          bg-card/80 backdrop-blur-xl border border-border/40
-          rounded-2xl shadow-2xl shadow-primary/5 floating-sidebar
-          transition-all duration-300 ease-in-out z-50
-          ${sidebarOpen ? 'w-60' : 'w-14'}
-          max-lg:left-0 max-lg:top-0 max-lg:bottom-0 max-lg:rounded-none 
-          max-lg:shadow-none max-lg:border-r
+          fixed z-50 transition-all duration-300 ease-in-out
+          bg-card border border-border/40
+          shadow-2xl shadow-primary/5 floating-sidebar
+          
+          lg:left-4 lg:top-4 lg:bottom-4 lg:rounded-2xl
+          ${sidebarOpen ? 'lg:w-60' : 'lg:w-14'}
+          
+          max-lg:top-0 max-lg:bottom-0 max-lg:left-0 max-lg:w-72 max-lg:rounded-none max-lg:border-r
+          ${sidebarOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'}
         `}
       >
         {/* Logo & Toggle */}
-        <div className="h-16 flex items-center justify-between px-4 bg-gradient-to-b from-primary/5 to-transparent">
+        <div className="h-16 flex items-center justify-between px-4 rounded-t-2xl max-lg:rounded-none bg-gradient-to-b from-primary/5 to-transparent">
           {sidebarOpen && (
             <div className="flex items-center gap-2 transition-opacity duration-200">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg shadow-primary/20">
@@ -168,10 +180,19 @@ export const Layout = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-[272px]' : 'ml-20'} max-lg:ml-0`}>
+      <div className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-[272px]' : 'lg:ml-20'}`}>
         {/* Top Header */}
         <header className="h-16 bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-30">
           <div className="h-full px-6 flex items-center justify-between">
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-9 w-9"
+              onClick={toggleSidebar}
+            >
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             <div>
               <h2 className="text-sm font-semibold text-foreground">Welcome back, Dr. Smith</h2>
               <p className="text-xs text-muted-foreground">
