@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ProfileModal } from '@/components/ProfileModal';
 import { 
   LayoutDashboard, 
   Users, 
@@ -38,6 +40,8 @@ export const Layout = () => {
     const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
     return saved ? JSON.parse(saved) : false;
   });
+
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   // Persist sidebar state to localStorage
   useEffect(() => {
@@ -210,18 +214,28 @@ export const Layout = () => {
               </Button>
 
               {/* Profile */}
-              <div className="flex items-center gap-2 pl-3 border-l border-border">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    DS
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden sm:block">
-                  <p className="text-xs font-medium">Dr. Sarah Smith</p>
-                  <p className="text-[10px] text-muted-foreground">Cardiologist</p>
-                </div>
-              </div>
+              <Popover open={profileModalOpen} onOpenChange={setProfileModalOpen}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 pl-3 border-l border-border hover:bg-accent/50 rounded-lg transition-colors p-1.5 -m-1.5">
+                    <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-xs font-semibold">
+                        DS
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden sm:block text-left">
+                      <p className="text-xs font-medium">Dr. Sarah Smith</p>
+                      <p className="text-[10px] text-muted-foreground">Cardiologist</p>
+                    </div>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  className="w-auto p-0 shadow-xl border-primary/20"
+                >
+                  <ProfileModal onClose={() => setProfileModalOpen(false)} />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </header>

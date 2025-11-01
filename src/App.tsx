@@ -12,6 +12,8 @@ import PatientProfile from "./pages/PatientProfile";
 import AIAnalysis from "./pages/AIAnalysis";
 import DrugChecker from "./pages/DrugChecker";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              
               <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
@@ -34,6 +39,7 @@ const App = () => (
                 <Route path="drug-checker" element={<DrugChecker />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

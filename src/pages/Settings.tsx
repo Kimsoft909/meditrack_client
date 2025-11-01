@@ -1,6 +1,7 @@
 // Settings page with comprehensive configuration options
 
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { SettingsSidebar, SettingsSection } from '@/components/settings/SettingsSidebar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +21,19 @@ const SettingsContentSkeleton = () => (
 );
 
 const Settings = () => {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('typography');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as SettingsSection | null;
+  
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    tabFromUrl || 'typography'
+  );
+
+  // Update active section when URL params change
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeSection) {
+      setActiveSection(tabFromUrl);
+    }
+  }, [tabFromUrl, activeSection]);
 
   const renderContent = () => {
     switch (activeSection) {
