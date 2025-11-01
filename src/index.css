@@ -371,4 +371,111 @@ All colors MUST be HSL.
     background: linear-gradient(135deg, hsl(var(--primary) / 0.03), transparent);
     border-radius: 0 0 0 100%;
   }
+
+  /* ==========================================
+     DRUG INTERACTION CHECKER STYLES
+     ========================================== */
+
+  /* Interaction card entrance animation */
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .interaction-card-enter {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  /* Severity badge variants */
+  .severity-badge-critical {
+    @apply bg-destructive text-destructive-foreground border-destructive;
+  }
+
+  .severity-badge-major {
+    @apply bg-[hsl(24,95%,53%)] text-white border-[hsl(24,95%,53%)];
+  }
+
+  .severity-badge-moderate {
+    @apply bg-[hsl(38,92%,50%)] text-white border-[hsl(38,92%,50%)];
+  }
+
+  .severity-badge-minor {
+    @apply bg-muted text-muted-foreground border-border;
+  }
+
+  /* Evidence level indicators (left border accent) */
+  .evidence-high {
+    @apply border-l-4 border-l-[hsl(142,71%,45%)];
+  }
+
+  .evidence-moderate {
+    @apply border-l-4 border-l-[hsl(38,92%,50%)];
+  }
+
+  .evidence-low {
+    @apply border-l-4 border-l-[hsl(215,20%,65%)];
+  }
+
+  /* Drug autocomplete item hover effect */
+  .drug-autocomplete-item {
+    @apply transition-all duration-150 hover:scale-[1.02] hover:shadow-sm;
+  }
+
+  /* Monitoring parameter list styling */
+  .monitoring-list {
+    @apply space-y-1 mt-2;
+  }
+
+  .monitoring-list li {
+    @apply text-sm pl-4 border-l-2 border-primary/30 py-1 hover:border-primary transition-colors;
+  }
+
+  /* Reference citation link styling */
+  .reference-link {
+    @apply text-primary hover:text-primary-hover underline-offset-2 hover:underline transition-colors text-xs;
+  }
+
+  /* Search loading pulse */
+  .search-loading {
+    @apply animate-pulse bg-muted/50 rounded-md;
+  }
+
+  /* Interaction severity color classes (for card backgrounds) */
+  .interaction-critical {
+    @apply bg-destructive/5 border-destructive/20 hover:bg-destructive/10;
+  }
+
+  .interaction-major {
+    @apply bg-[hsl(24,95%,53%)]/5 border-[hsl(24,95%,53%)]/20 hover:bg-[hsl(24,95%,53%)]/10;
+  }
+
+  .interaction-moderate {
+    @apply bg-[hsl(38,92%,50%)]/5 border-[hsl(38,92%,50%)]/20 hover:bg-[hsl(38,92%,50%)]/10;
+  }
+
+  .interaction-minor {
+    @apply bg-muted/30 border-border hover:bg-muted/50;
+  }
+
+  /* Drug selector badge animation */
+  @keyframes drugBadgeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .drug-badge-enter {
+    animation: drugBadgeIn 0.2s ease-out;
+  }
 }
