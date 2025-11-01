@@ -1,20 +1,35 @@
 // Scrollable list of patients requiring immediate clinical attention
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RiskBadge } from '@/components/RiskBadge';
 import { Patient } from '@/types/patient';
-import { AlertTriangle, Activity, Calendar } from 'lucide-react';
+import { AlertTriangle, Activity, Calendar as CalendarIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar } from '@/components/ui/calendar';
+import { toast } from 'sonner';
 
 interface CriticalAlertsListProps {
   patients: Patient[];
 }
 
 export const CriticalAlertsList = memo(({ patients }: CriticalAlertsListProps) => {
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+
+  const handleScheduleAppointment = () => {
+    if (selectedPatient && selectedDate) {
+      toast.success(`Appointment scheduled for ${selectedPatient.name} on ${format(selectedDate, 'PPP')}`);
+      setCalendarOpen(false);
+      setSelectedDate(undefined);
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -75,8 +90,16 @@ export const CriticalAlertsList = memo(({ patients }: CriticalAlertsListProps) =
                           View Profile
                         </Button>
                       </Link>
-                      <Button variant="ghost" size="sm" className="text-xs">
-                        <Calendar className="h-3 w-3" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          setCalendarOpen(true);
+                        }}
+                      >
+                        <CalendarIcon className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -86,6 +109,33 @@ export const CriticalAlertsList = memo(({ patients }: CriticalAlertsListProps) =
           </div>
         </ScrollArea>
       </CardContent>
+
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Appointment</DialogTitle>
+            <DialogDescription>
+              Select a date for follow-up with {selectedPatient?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <Calendar 
+              mode="single" 
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              disabled={(date) => date < new Date()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCalendarOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleScheduleAppointment} disabled={!selectedDate}>
+              Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 });

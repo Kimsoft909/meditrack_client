@@ -40,12 +40,16 @@ const AIChat = React.memo(() => {
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
+      // Scroll to bottom smoothly
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    // Use requestAnimationFrame for smoother scroll after render
+    requestAnimationFrame(() => {
+      scrollToBottom();
+    });
   }, [messages, isTyping, scrollToBottom]);
 
   const simulateAIResponse = useCallback((userMessage: string): string => {

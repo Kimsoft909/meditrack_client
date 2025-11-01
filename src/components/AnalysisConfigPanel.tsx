@@ -54,7 +54,7 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-5">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-5 h-fit">
       <div>
         <h3 className="text-base sm:text-lg font-semibold mb-1">Configuration</h3>
         <p className="text-xs sm:text-sm text-muted-foreground">Select patient and analysis parameters</p>

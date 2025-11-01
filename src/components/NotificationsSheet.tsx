@@ -91,20 +91,13 @@ export const NotificationsSheet = React.memo<NotificationsSheetProps>(({ open, o
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-96 p-0">
         <SheetHeader className="border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <SheetTitle className="text-base font-semibold">Notifications</SheetTitle>
-              {unreadCount > 0 && (
-                <Badge variant="destructive" className="h-5 px-2 text-xs">
-                  {unreadCount}
-                </Badge>
-              )}
-            </div>
-            <SheetClose asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetClose>
+          <div className="flex items-center gap-2">
+            <SheetTitle className="text-base font-semibold">Notifications</SheetTitle>
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="h-5 px-2 text-xs">
+                {unreadCount}
+              </Badge>
+            )}
           </div>
         </SheetHeader>
 

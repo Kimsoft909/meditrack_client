@@ -41,49 +41,48 @@ const DrugChecker = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header with Clinical Disclaimer Tooltip */}
       <div className="flex items-start justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-1">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
             <Pill className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
           </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-foreground">Drug Interaction Checker</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Evidence-based drug interaction analysis</p>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">Drug Interaction Checker</h1>
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-7 w-7 rounded-full border hover:border-primary"
+                    >
+                      <HelpCircle className="h-4 w-4 text-primary" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="bottom" 
+                    align="start"
+                    className="max-w-[90vw] sm:max-w-md p-3 sm:p-4"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Info className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
+                        <p className="text-xs sm:text-sm font-semibold">Clinical Decision Support Tool</p>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
+                        This tool provides evidence-based guidance for drug-drug interactions based on clinical literature 
+                        and pharmaceutical databases. Always use clinical judgment, consider patient-specific factors (age, 
+                        comorbidities, pharmacogenomics), and consult authoritative drug references for complete prescribing 
+                        information. This tool is not a substitute for professional medical judgment.
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Evidence-based drug interaction analysis</p>
           </div>
         </div>
-        
-        {/* Clinical Disclaimer Tooltip */}
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="h-9 w-9 md:h-10 md:w-10 rounded-full border-2 hover:border-primary hover:bg-primary/5 transition-all"
-                aria-label="Clinical decision support information"
-              >
-                <HelpCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent 
-              side="bottom" 
-              align="end" 
-              className="max-w-sm md:max-w-md p-4 bg-card border-2 border-primary/20 shadow-xl"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-primary shrink-0" />
-                  <p className="text-sm font-semibold">Clinical Decision Support Tool</p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  This tool provides evidence-based guidance for drug-drug interactions based on clinical literature 
-                  and pharmaceutical databases. Always use clinical judgment, consider patient-specific factors (age, 
-                  comorbidities, pharmacogenomics), and consult authoritative drug references for complete prescribing 
-                  information. This tool is not a substitute for professional medical judgment.
-                </p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
 
       {/* Statistics Dashboard */}

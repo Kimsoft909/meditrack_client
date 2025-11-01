@@ -135,9 +135,6 @@ export const Layout = () => {
                     {item.label}
                   </span>
                 )}
-                {isActive && (
-                  <div className="absolute left-0 top-1 bottom-1 w-1 bg-primary-foreground rounded-r" />
-                )}
               </Link>
             );
 

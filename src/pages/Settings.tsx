@@ -64,8 +64,10 @@ const Settings = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex gap-6 min-h-0">
-        <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
+        <div className="w-48 shrink-0">
+          <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+        </div>
         
         <div className="flex-1 overflow-y-auto pr-2">
           <Suspense fallback={<SettingsContentSkeleton />}>

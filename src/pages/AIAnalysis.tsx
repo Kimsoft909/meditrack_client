@@ -51,17 +51,17 @@ export default function AIAnalysis() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Configuration Panel */}
-        <div className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-16rem)]">
+        {/* Configuration Panel - Independent scroll */}
+        <div className="lg:col-span-1 overflow-y-auto pr-2">
           <AnalysisConfigPanel
             onGenerate={handleGenerateReport}
             isGenerating={isGenerating}
           />
         </div>
 
-        {/* Report Display */}
-        <div className="lg:col-span-2">
+        {/* Report Display - Independent scroll */}
+        <div className="lg:col-span-2 overflow-y-auto pr-2">
           {generatedReport ? (
             <AnalysisReportDocument report={generatedReport} />
           ) : (
