@@ -13,6 +13,14 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-family, Inter)', 'system-ui', 'sans-serif'],
+        cambria: ['Cambria', 'Georgia', 'serif'],
+        inter: ['Inter', 'system-ui', 'sans-serif'],
+        roboto: ['Roboto', 'system-ui', 'sans-serif'],
+        'open-sans': ['Open Sans', 'system-ui', 'sans-serif'],
+        'source-sans': ['Source Sans Pro', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

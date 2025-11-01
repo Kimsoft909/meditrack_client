@@ -8,6 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Typography system */
+    --font-family: 'Inter';
+    --font-scale: 1;
+    
     /* Clinical neutral base */
     --background: 0 0% 98%;
     --foreground: 215 25% 15%;
@@ -116,11 +120,13 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-size: 0.875rem; /* Compact base font */
+    font-family: var(--font-family, 'Inter'), system-ui, sans-serif;
+    font-size: calc(0.875rem * var(--font-scale, 1));
     line-height: 1.5;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    transition: font-family 0.2s ease, font-size 0.2s ease;
   }
 
   /* Document-Style Report Styling */
