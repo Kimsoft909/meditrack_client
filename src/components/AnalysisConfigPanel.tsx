@@ -54,28 +54,29 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
   };
 
   return (
-    <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-lg p-6 space-y-6">
+    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-5">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Configuration</h3>
-        <p className="text-sm text-muted-foreground">Select patient and analysis parameters</p>
+        <h3 className="text-base sm:text-lg font-semibold mb-1">Configuration</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground">Select patient and analysis parameters</p>
       </div>
 
       {/* Patient Search */}
       <div className="space-y-2">
-        <Label>Patient</Label>
+        <Label className="text-xs sm:text-sm">Patient</Label>
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
+              size="sm"
               aria-expanded={searchOpen}
-              className="w-full justify-between"
+              className="w-full justify-between h-9"
             >
-              {selectedPatientName || "Search patient..."}
-              <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              <span className="truncate text-xs sm:text-sm">{selectedPatientName || "Search patient..."}</span>
+              <Search className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[400px] p-0" align="start">
+          <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[400px] p-0" align="start">
             <Command>
               <CommandInput placeholder="Search by name or ID..." />
               <CommandEmpty>No patient found.</CommandEmpty>
@@ -91,7 +92,7 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                     }}
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium">{patient.name}</span>
+                      <span className="font-medium text-sm">{patient.name}</span>
                       <span className="text-xs text-muted-foreground">
                         {patient.id} • {patient.age}yo • {patient.sex}
                       </span>
@@ -106,19 +107,20 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
 
       {/* Date Range */}
       <div className="space-y-2">
-        <Label>Analysis Period</Label>
-        <div className="flex gap-2">
+        <Label className="text-xs sm:text-sm">Analysis Period</Label>
+        <div className="flex flex-col sm:flex-row gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
+                size="sm"
                 className={cn(
-                  "flex-1 justify-start text-left font-normal",
+                  "flex-1 justify-start text-left font-normal h-9 text-xs sm:text-sm",
                   !dateRange.from && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.from ? format(dateRange.from, "PPP") : "From date"}
+                <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">{dateRange.from ? format(dateRange.from, "PP") : "From date"}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -135,13 +137,14 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
+                size="sm"
                 className={cn(
-                  "flex-1 justify-start text-left font-normal",
+                  "flex-1 justify-start text-left font-normal h-9 text-xs sm:text-sm",
                   !dateRange.to && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.to ? format(dateRange.to, "PPP") : "To date"}
+                <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">{dateRange.to ? format(dateRange.to, "PP") : "To date"}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -155,27 +158,27 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
           </Popover>
         </div>
         
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleQuickDateRange(30)}>
-            30 days
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(30)}>
+            30d
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleQuickDateRange(90)}>
-            3 months
+          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(90)}>
+            3mo
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleQuickDateRange(180)}>
-            6 months
+          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(180)}>
+            6mo
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleQuickDateRange(365)}>
-            1 year
+          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(365)}>
+            1yr
           </Button>
         </div>
       </div>
 
       {/* Analysis Options */}
-      <div className="space-y-3">
-        <Label>Include in Report</Label>
+      <div className="space-y-2 sm:space-y-3">
+        <Label className="text-xs sm:text-sm">Include in Report</Label>
         
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="vitals"
@@ -184,8 +187,8 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 setOptions({ ...options, includeVitals: checked as boolean })
               }
             />
-            <Label htmlFor="vitals" className="flex items-center gap-2 cursor-pointer">
-              <Activity className="h-4 w-4 text-primary" />
+            <Label htmlFor="vitals" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               Vital Signs Analysis
             </Label>
           </div>
@@ -198,8 +201,8 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 setOptions({ ...options, includeMedications: checked as boolean })
               }
             />
-            <Label htmlFor="medications" className="flex items-center gap-2 cursor-pointer">
-              <Pill className="h-4 w-4 text-primary" />
+            <Label htmlFor="medications" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+              <Pill className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               Medication Review
             </Label>
           </div>
@@ -212,8 +215,8 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 setOptions({ ...options, includeRiskAssessment: checked as boolean })
               }
             />
-            <Label htmlFor="risk" className="flex items-center gap-2 cursor-pointer">
-              <AlertTriangle className="h-4 w-4 text-primary" />
+            <Label htmlFor="risk" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               Risk Assessment
             </Label>
           </div>
@@ -226,8 +229,8 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 setOptions({ ...options, includeTrendAnalysis: checked as boolean })
               }
             />
-            <Label htmlFor="trends" className="flex items-center gap-2 cursor-pointer">
-              <TrendingUp className="h-4 w-4 text-primary" />
+            <Label htmlFor="trends" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               Trend Detection
             </Label>
           </div>
@@ -240,8 +243,8 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 setOptions({ ...options, includeComparativeAnalysis: checked as boolean })
               }
             />
-            <Label htmlFor="comparative" className="flex items-center gap-2 cursor-pointer">
-              <BarChart3 className="h-4 w-4 text-primary" />
+            <Label htmlFor="comparative" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               Comparative Analysis
             </Label>
           </div>
@@ -252,16 +255,16 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
       <Button
         onClick={handleGenerate}
         disabled={!selectedPatientId || isGenerating}
-        className="w-full"
-        size="lg"
+        className="w-full h-9"
+        size="sm"
       >
         {isGenerating ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating Report...
+            <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+            <span className="text-xs sm:text-sm">Generating...</span>
           </>
         ) : (
-          'Generate Report'
+          <span className="text-xs sm:text-sm">Generate Report</span>
         )}
       </Button>
     </div>

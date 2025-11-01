@@ -68,9 +68,9 @@ export function ReportExportDialog({ reportId }: ReportExportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
+        <Button variant="outline" size="sm" className="h-9">
+          <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+          <span className="text-xs sm:text-sm">Export</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

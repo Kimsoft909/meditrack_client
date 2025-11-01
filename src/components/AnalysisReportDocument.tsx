@@ -34,25 +34,25 @@ export function AnalysisReportDocument({ report }: AnalysisReportDocumentProps) 
   };
 
   return (
-    <div id="report-document" className="report-document">
+    <div id="report-document" className="report-document bg-card border border-border rounded-lg p-4 sm:p-6 lg:p-8">
       {/* Header - Medical Letterhead Style */}
       <div className="report-header">
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-primary mb-1">MEDITRACK</h1>
-            <p className="text-sm text-muted-foreground">AI-Powered Clinical Analysis System</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-primary mb-1">MEDITRACK</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">AI-Powered Clinical Analysis System</p>
           </div>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <div className="text-xs text-muted-foreground">Report ID</div>
-            <div className="font-mono text-sm font-semibold">{report.reportId}</div>
+            <div className="font-mono text-xs sm:text-sm font-semibold">{report.reportId}</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {format(report.reportDate, 'PPP')}
+              {format(report.reportDate, 'PP')}
             </div>
           </div>
         </div>
 
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold">AI-Powered Clinical Analysis Report</h2>
+          <h2 className="text-base sm:text-xl font-semibold">AI-Powered Clinical Analysis Report</h2>
         </div>
       </div>
 
