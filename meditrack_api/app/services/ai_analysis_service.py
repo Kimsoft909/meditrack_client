@@ -1,5 +1,5 @@
 """
-AI clinical analysis report generation orchestrator.
+AI clinical analysis report generation orchestrator with caching.
 """
 
 import uuid
@@ -21,6 +21,7 @@ from app.ai.grok_client import GrokClient
 from app.utils.medical_calculations import calculate_linear_trend, get_vital_status, calculate_risk_score
 from app.utils.export import generate_pdf_report
 from app.core.exceptions import ResourceNotFoundError
+from app.utils.cache import get_cached_value, set_cached_value
 
 
 class AIAnalysisService:
@@ -34,7 +35,13 @@ class AIAnalysisService:
         date_range: Dict[str, str],
         options: AnalysisOptions
     ) -> AnalysisReportResponse:
-        """Generate comprehensive AI clinical analysis report."""
+        """Generate comprehensive AI clinical analysis report with caching."""
+        # Check cache first
+        cache_key = f"ai_analysis:{patient_id}:{date_range.get('from')}:{date_range.get('to')}:{hash(str(options))}"
+        cached = await get_cached_value(cache_key)
+        if cached:
+            return AnalysisReportResponse(**cached)
+        
         # Fetch patient
         result = await self.db.execute(
             select(Patient).where(Patient.id == patient_id)
@@ -95,7 +102,7 @@ class AIAnalysisService:
         
         report_id = f"ANALYSIS-{datetime.now().year}-{uuid.uuid4().hex[:4].upper()}"
         
-        return AnalysisReportResponse(
+        report = AnalysisReportResponse(
             report_id=report_id,
             patient=PatientSummary(
                 id=patient.id,
@@ -122,6 +129,11 @@ class AIAnalysisService:
                 "analysis_timestamp": datetime.now().isoformat()
             }
         )
+        
+        # Cache for 1 hour (AI responses don't change unless data changes)
+        await set_cached_value(cache_key, report.model_dump(), ttl=3600)
+        
+        return report
     
     def _analyze_vitals(self, vitals: list) -> Dict[str, Any]:
         """Analyze vital signs trends and anomalies."""

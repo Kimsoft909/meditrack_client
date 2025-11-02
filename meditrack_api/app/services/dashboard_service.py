@@ -1,5 +1,5 @@
 """
-Dashboard analytics and KPI calculations.
+Dashboard analytics and KPI calculations with Redis caching.
 """
 
 from datetime import datetime, timedelta
@@ -18,12 +18,14 @@ from app.schemas.dashboard import (
     SparklineData,
     VitalsTrendsResponse
 )
+from app.utils.cache import cache_result, invalidate_cache
 
 
 class DashboardService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
+    @cache_result(ttl=300, key_prefix="dashboard")
     async def get_dashboard_stats(self) -> DashboardStatsResponse:
         """Get comprehensive dashboard statistics."""
         # Total patients
@@ -64,6 +66,7 @@ class DashboardService:
             pending_analyses=pending_analyses
         )
     
+    @cache_result(ttl=300, key_prefix="dashboard")
     async def calculate_kpis(self) -> KPIMetricsResponse:
         """Calculate KPI metrics with trend indicators."""
         now = datetime.utcnow()
@@ -118,6 +121,7 @@ class DashboardService:
         
         return KPIMetricsResponse(metrics=metrics)
     
+    @cache_result(ttl=300, key_prefix="dashboard")
     async def get_risk_distribution(self) -> RiskDistributionResponse:
         """Get patient distribution by risk level."""
         result = await self.db.execute(
@@ -138,6 +142,7 @@ class DashboardService:
         
         return RiskDistributionResponse(distribution=distribution)
     
+    @cache_result(ttl=300, key_prefix="dashboard")
     async def get_vitals_trends(self) -> VitalsTrendsResponse:
         """Get aggregated vitals trends across all patients."""
         cutoff_date = datetime.utcnow() - timedelta(days=14)
@@ -189,3 +194,14 @@ class DashboardService:
             ))
         
         return VitalsTrendsResponse(sparklines=sparklines)
+    
+    async def invalidate_dashboard_cache(self) -> int:
+        """
+        Invalidate all dashboard-related cache entries.
+        
+        Call this after creating/updating critical data (patients, vitals).
+        
+        Returns:
+            Number of cache keys invalidated
+        """
+        return await invalidate_cache("dashboard:*")

@@ -19,6 +19,7 @@ from app.db.repositories.patient_repo import PatientRepository
 from app.utils.pagination import PaginationParams, paginate_query
 from app.utils.medical_calculations import calculate_bmi
 from app.utils.validators import validate_age_from_dob
+from app.utils.cache import invalidate_cache
 
 
 class PatientService:
@@ -61,6 +62,9 @@ class PatientService:
         self.db.add(patient)
         await self.db.commit()
         await self.db.refresh(patient)
+        
+        # Invalidate dashboard cache after creating patient
+        await invalidate_cache("dashboard:*")
         
         return PatientResponse.model_validate(patient)
     
@@ -148,6 +152,9 @@ class PatientService:
         await self.db.commit()
         await self.db.refresh(patient)
         
+        # Invalidate dashboard cache after updating patient
+        await invalidate_cache("dashboard:*")
+        
         return PatientResponse.model_validate(patient)
     
     async def delete_patient(self, patient_id: str) -> None:
@@ -158,3 +165,6 @@ class PatientService:
         patient.updated_at = datetime.utcnow()
         
         await self.db.commit()
+        
+        # Invalidate dashboard cache after deleting/discharging patient
+        await invalidate_cache("dashboard:*")
