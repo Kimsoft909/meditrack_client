@@ -58,7 +58,7 @@ class DrugRepository(BaseRepository[Drug]):
         """
         query_lower = query.lower().strip()
         
-        # First try exact prefix match (fast path)
+        # First try exact prefix match (fastest path to get quick result)
         result = await self.db.execute(
             select(Drug)
             .where(
