@@ -3,6 +3,29 @@
 from typing import List
 
 
+def calculate_bmi(weight_kg: float, height_m: float) -> float:
+    """
+    Calculate Body Mass Index.
+    
+    Args:
+        weight_kg: Weight in kilograms
+        height_m: Height in meters
+    
+    Returns:
+        BMI rounded to 2 decimal places
+    
+    Raises:
+        ValueError: If weight or height <= 0
+    
+    Example:
+        >>> calculate_bmi(70, 1.75)
+        22.86
+    """
+    if weight_kg <= 0 or height_m <= 0:
+        raise ValueError("Weight and height must be positive")
+    return round(weight_kg / (height_m ** 2), 2)
+
+
 def calculate_linear_trend(values: List[float]) -> str:
     """Calculate linear trend direction from values."""
     if len(values) < 2:

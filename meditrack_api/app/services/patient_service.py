@@ -1,11 +1,11 @@
 """
 Patient management service: CRUD, search, filtering.
+Uses PatientRepository for data access (Phase 1 refactoring).
 """
 
 import uuid
 from datetime import date, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
 
 from app.models.patient import Patient, PatientStatus, RiskLevel
 from app.schemas.patient import (
@@ -15,28 +15,21 @@ from app.schemas.patient import (
     PatientListResponse
 )
 from app.core.exceptions import ResourceNotFoundError, ValidationError
+from app.db.repositories.patient_repo import PatientRepository
+from app.utils.pagination import PaginationParams, paginate_query
+from app.utils.medical_calculations import calculate_bmi
+from app.utils.validators import validate_age_from_dob
 
 
 class PatientService:
     def __init__(self, db: AsyncSession):
         self.db = db
-    
-    def _calculate_bmi(self, weight_kg: float, height_m: float) -> float:
-        """Calculate BMI from weight and height."""
-        return round(weight_kg / (height_m ** 2), 2)
-    
-    def _calculate_age(self, date_of_birth: date) -> int:
-        """Calculate age from date of birth."""
-        today = date.today()
-        age = today.year - date_of_birth.year
-        if today.month < date_of_birth.month or (today.month == date_of_birth.month and today.day < date_of_birth.day):
-            age -= 1
-        return age
+        self.patient_repo = PatientRepository(db)
     
     async def create_patient(self, patient_data: PatientCreate) -> PatientResponse:
         """Create new patient record with calculated fields."""
-        bmi = self._calculate_bmi(patient_data.weight, patient_data.height)
-        age = self._calculate_age(patient_data.date_of_birth)
+        bmi = calculate_bmi(patient_data.weight, patient_data.height)
+        age = validate_age_from_dob(patient_data.date_of_birth)
         
         patient = Patient(
             id=f"PAT-{uuid.uuid4().hex[:8].upper()}",
@@ -67,15 +60,8 @@ class PatientService:
         return PatientResponse.model_validate(patient)
     
     async def get_patient_by_id(self, patient_id: str) -> PatientResponse:
-        """Get patient by ID."""
-        result = await self.db.execute(
-            select(Patient).where(Patient.id == patient_id)
-        )
-        patient = result.scalar_one_or_none()
-        
-        if not patient:
-            raise ResourceNotFoundError("Patient", patient_id)
-        
+        """Get patient by ID using repository."""
+        patient = await self.patient_repo.get_by_id_or_404(patient_id)
         return PatientResponse.model_validate(patient)
     
     async def get_patients_paginated(
@@ -86,56 +72,47 @@ class PatientService:
         status_filter: str = None,
         risk_filter: str = None
     ) -> PatientListResponse:
-        """Get paginated patient list with filters."""
-        query = select(Patient)
+        """Get paginated patient list with filters using repository and pagination utilities."""
+        from sqlalchemy import select
         
-        # Apply search filter (name or ID)
+        # Use repository for search if provided
         if search:
-            query = query.where(
-                or_(
-                    Patient.id.ilike(f"%{search}%"),
-                    Patient.first_name.ilike(f"%{search}%"),
-                    Patient.last_name.ilike(f"%{search}%")
-                )
+            patients = await self.patient_repo.search_by_name(search, limit=page_size)
+            total = len(patients)
+            
+            return PatientListResponse(
+                total=total,
+                page=page,
+                page_size=page_size,
+                patients=[PatientResponse.model_validate(p) for p in patients]
             )
         
-        # Apply status filter
+        # Build query with filters
+        query = select(Patient)
+        
         if status_filter:
             query = query.where(Patient.status == status_filter)
         
-        # Apply risk level filter
         if risk_filter:
             query = query.where(Patient.risk_level == risk_filter)
         
-        # Get total count
-        count_result = await self.db.execute(
-            select(func.count()).select_from(query.subquery())
-        )
-        total = count_result.scalar()
+        # Add default ordering
+        query = query.order_by(Patient.admission_date.desc())
         
-        # Apply pagination
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size).order_by(Patient.admission_date.desc())
-        
-        result = await self.db.execute(query)
-        patients = result.scalars().all()
+        # Use pagination utility
+        params = PaginationParams(page=page, page_size=page_size)
+        paginated = await paginate_query(self.db, query, params)
         
         return PatientListResponse(
-            total=total,
-            page=page,
-            page_size=page_size,
-            patients=[PatientResponse.model_validate(p) for p in patients]
+            total=paginated.total,
+            page=paginated.page,
+            page_size=paginated.page_size,
+            patients=[PatientResponse.model_validate(p) for p in paginated.items]
         )
     
     async def update_patient(self, patient_id: str, updates: PatientUpdate) -> PatientResponse:
-        """Update patient information."""
-        result = await self.db.execute(
-            select(Patient).where(Patient.id == patient_id)
-        )
-        patient = result.scalar_one_or_none()
-        
-        if not patient:
-            raise ResourceNotFoundError("Patient", patient_id)
+        """Update patient information using repository."""
+        patient = await self.patient_repo.get_by_id_or_404(patient_id)
         
         # Update fields
         update_data = updates.model_dump(exclude_unset=True)
@@ -144,7 +121,7 @@ class PatientService:
         
         # Recalculate BMI if weight or height changed
         if "weight" in update_data or "height" in update_data:
-            patient.bmi = self._calculate_bmi(patient.weight, patient.height)
+            patient.bmi = calculate_bmi(patient.weight, patient.height)
         
         patient.updated_at = datetime.utcnow()
         
@@ -154,14 +131,8 @@ class PatientService:
         return PatientResponse.model_validate(patient)
     
     async def delete_patient(self, patient_id: str) -> None:
-        """Soft delete patient (set status to discharged)."""
-        result = await self.db.execute(
-            select(Patient).where(Patient.id == patient_id)
-        )
-        patient = result.scalar_one_or_none()
-        
-        if not patient:
-            raise ResourceNotFoundError("Patient", patient_id)
+        """Soft delete patient (set status to discharged) using repository."""
+        patient = await self.patient_repo.get_by_id_or_404(patient_id)
         
         patient.status = PatientStatus.DISCHARGED
         patient.updated_at = datetime.utcnow()
