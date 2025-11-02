@@ -23,7 +23,7 @@ from app.models.drug_interaction import DrugInteraction
 from app.core.security import hash_password
 
 
-# Set test environment
+# Set a test environment
 os.environ["ENVIRONMENT"] = "test"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 
