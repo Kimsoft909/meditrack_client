@@ -3,11 +3,16 @@ Centralized configuration using Pydantic Settings.
 Reads from .env.local and validates all environment variables.
 """
 
+import os
+from dotenv import load_dotenv
 from functools import lru_cache
 from typing import List
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load environment variables from .env.local
+load_dotenv(".env.local")
 
 
 class Settings(BaseSettings):
