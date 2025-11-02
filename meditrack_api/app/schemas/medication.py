@@ -4,7 +4,7 @@ Integrates medical dosage and date validators.
 """
 
 from datetime import date, datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -60,3 +60,12 @@ class MedicationResponse(MedicationCreate):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MedicationListResponse(BaseModel):
+    """Paginated medication list response."""
+
+    total: int
+    page: int
+    page_size: int
+    medications: List[MedicationResponse]

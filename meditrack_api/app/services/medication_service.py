@@ -13,10 +13,12 @@ from app.models.medication import Medication
 from app.schemas.medication import (
     MedicationCreate,
     MedicationUpdate,
-    MedicationResponse
+    MedicationResponse,
+    MedicationListResponse
 )
 from app.core.exceptions import ResourceNotFoundError
 from app.db.repositories.patient_repo import PatientRepository
+from app.utils.pagination import PaginationParams, paginate_query
 
 
 class MedicationService:
@@ -58,9 +60,11 @@ class MedicationService:
     async def get_patient_medications(
         self,
         patient_id: str,
-        active_only: bool = True
-    ) -> List[MedicationResponse]:
-        """Get all medications for a patient."""
+        active_only: bool = True,
+        page: int = 1,
+        page_size: int = 50
+    ) -> MedicationListResponse:
+        """Get paginated medications for a patient."""
         query = select(Medication).where(Medication.patient_id == patient_id)
         
         if active_only:
@@ -68,10 +72,16 @@ class MedicationService:
         
         query = query.order_by(Medication.start_date.desc())
         
-        result = await self.db.execute(query)
-        medications = result.scalars().all()
+        # Use standardized pagination utility
+        params = PaginationParams(page=page, page_size=page_size)
+        paginated = await paginate_query(self.db, query, params)
         
-        return [MedicationResponse.model_validate(m) for m in medications]
+        return MedicationListResponse(
+            total=paginated.total,
+            page=paginated.page,
+            page_size=paginated.page_size,
+            medications=[MedicationResponse.model_validate(m) for m in paginated.items]
+        )
     
     async def update_medication(
         self,

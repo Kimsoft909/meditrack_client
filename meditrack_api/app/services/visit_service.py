@@ -10,22 +10,21 @@ from sqlalchemy import select
 
 from app.models.visit import Visit
 from app.models.patient import Patient
-from app.schemas.visit import VisitCreate, VisitResponse
+from app.schemas.visit import VisitCreate, VisitResponse, VisitListResponse
 from app.core.exceptions import ResourceNotFoundError
+from app.db.repositories.patient_repo import PatientRepository
+from app.utils.pagination import PaginationParams, paginate_query
 
 
 class VisitService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.patient_repo = PatientRepository(db)
     
     async def create_visit(self, patient_id: str, visit_data: VisitCreate) -> VisitResponse:
         """Record a new patient visit."""
-        # Verify patient exists
-        result = await self.db.execute(
-            select(Patient).where(Patient.id == patient_id)
-        )
-        if not result.scalar_one_or_none():
-            raise ResourceNotFoundError("Patient", patient_id)
+        # Use repository to verify patient exists
+        await self.patient_repo.get_by_id_or_404(patient_id)
         
         visit = Visit(
             id=str(uuid.uuid4()),
@@ -46,13 +45,24 @@ class VisitService:
         
         return VisitResponse.model_validate(visit)
     
-    async def get_patient_visits(self, patient_id: str) -> List[VisitResponse]:
-        """Get visit history for a patient."""
-        result = await self.db.execute(
-            select(Visit)
-            .where(Visit.patient_id == patient_id)
-            .order_by(Visit.visit_date.desc())
-        )
-        visits = result.scalars().all()
+    async def get_patient_visits(
+        self,
+        patient_id: str,
+        page: int = 1,
+        page_size: int = 50
+    ) -> VisitListResponse:
+        """Get paginated visit history for a patient."""
+        query = select(Visit).where(
+            Visit.patient_id == patient_id
+        ).order_by(Visit.visit_date.desc())
         
-        return [VisitResponse.model_validate(v) for v in visits]
+        # Use standardized pagination utility
+        params = PaginationParams(page=page, page_size=page_size)
+        paginated = await paginate_query(self.db, query, params)
+        
+        return VisitListResponse(
+            total=paginated.total,
+            page=paginated.page,
+            page_size=paginated.page_size,
+            visits=[VisitResponse.model_validate(v) for v in paginated.items]
+        )

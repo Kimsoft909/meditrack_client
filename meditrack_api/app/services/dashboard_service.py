@@ -1,5 +1,6 @@
 """
 Dashboard analytics and KPI calculations with Redis caching.
+Refactored to use date_helpers for consistent timezone handling.
 """
 
 from datetime import datetime, timedelta
@@ -19,6 +20,7 @@ from app.schemas.dashboard import (
     VitalsTrendsResponse
 )
 from app.utils.cache import cache_result, invalidate_cache
+from app.utils.date_helpers import get_date_range_from_days
 
 
 class DashboardService:
@@ -68,10 +70,10 @@ class DashboardService:
     
     @cache_result(ttl=300, key_prefix="dashboard")
     async def calculate_kpis(self) -> KPIMetricsResponse:
-        """Calculate KPI metrics with trend indicators."""
-        now = datetime.utcnow()
-        week_ago = now - timedelta(days=7)
-        two_weeks_ago = now - timedelta(days=14)
+        """Calculate KPI metrics with trend indicators using centralized date utilities."""
+        # Use date helpers for consistent date range calculation
+        week_ago, now = get_date_range_from_days(7)
+        two_weeks_ago, _ = get_date_range_from_days(14)
         
         # Current active patients
         current_result = await self.db.execute(
@@ -144,8 +146,9 @@ class DashboardService:
     
     @cache_result(ttl=300, key_prefix="dashboard")
     async def get_vitals_trends(self) -> VitalsTrendsResponse:
-        """Get aggregated vitals trends across all patients."""
-        cutoff_date = datetime.utcnow() - timedelta(days=14)
+        """Get aggregated vitals trends across all patients using date helpers."""
+        # Use centralized date range calculation
+        cutoff_date, _ = get_date_range_from_days(14)
         
         result = await self.db.execute(
             select(Vital).where(

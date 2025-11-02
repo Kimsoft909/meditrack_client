@@ -1,7 +1,9 @@
-"""Visit schemas."""
+"""
+Visit history schemas.
+"""
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,3 +28,12 @@ class VisitResponse(VisitCreate):
     visit_date: datetime
 
     model_config = {"from_attributes": True}
+
+
+class VisitListResponse(BaseModel):
+    """Paginated visit list response."""
+
+    total: int
+    page: int
+    page_size: int
+    visits: List[VisitResponse]

@@ -1,5 +1,6 @@
 """
 AI clinical analysis report generation orchestrator with caching.
+Refactored to use date_helpers for consistent date handling.
 """
 
 import uuid
@@ -22,6 +23,7 @@ from app.utils.medical_calculations import calculate_linear_trend, get_vital_sta
 from app.utils.export import generate_pdf_report
 from app.core.exceptions import ResourceNotFoundError
 from app.utils.cache import get_cached_value, set_cached_value
+from app.utils.date_helpers import parse_optional_date
 
 
 class AIAnalysisService:
@@ -50,12 +52,18 @@ class AIAnalysisService:
         if not patient:
             raise ResourceNotFoundError("Patient", patient_id)
         
-        # Fetch vitals in date range
-        vitals_query = select(Vital).where(
-            Vital.patient_id == patient_id,
-            Vital.timestamp >= datetime.fromisoformat(date_range["from"]),
-            Vital.timestamp <= datetime.fromisoformat(date_range["to"])
-        ).order_by(Vital.timestamp.desc())
+        # Fetch vitals in date range using centralized date parsing
+        start_date = parse_optional_date(date_range.get("from"))
+        end_date = parse_optional_date(date_range.get("to"))
+        
+        vitals_query = select(Vital).where(Vital.patient_id == patient_id)
+        
+        if start_date:
+            vitals_query = vitals_query.where(Vital.timestamp >= start_date)
+        if end_date:
+            vitals_query = vitals_query.where(Vital.timestamp <= end_date)
+        
+        vitals_query = vitals_query.order_by(Vital.timestamp.desc())
         vitals_result = await self.db.execute(vitals_query)
         vitals = list(vitals_result.scalars().all())
         
