@@ -23,6 +23,7 @@ class User(Base, TimestampMixin):
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
     specialty = Column(String, nullable=True)  # Medical specialty
+    avatar_url = Column(String(500), nullable=True)  # Profile picture URL
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
     last_login = Column(DateTime, nullable=True)

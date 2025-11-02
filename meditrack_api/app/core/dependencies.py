@@ -20,6 +20,8 @@ async def get_current_user(
     """
     Extract and validate JWT token from Authorization header.
     Returns authenticated user or raises AuthenticationError.
+
+    Also checks if token is blacklisted (logged out).
     """
     if not authorization:
         raise AuthenticationError(detail="Authorization header missing")
@@ -37,6 +39,15 @@ async def get_current_user(
 
     if not user_id:
         raise AuthenticationError(detail="Invalid token payload")
+
+    # Check if token is blacklisted
+    from app.models.token_blacklist import TokenBlacklist
+
+    blacklist_result = await db.execute(
+        select(TokenBlacklist).where(TokenBlacklist.token == token)
+    )
+    if blacklist_result.scalar_one_or_none():
+        raise AuthenticationError(detail="Token has been revoked")
 
     # Fetch user from database
     result = await db.execute(select(User).where(User.id == user_id))

@@ -11,6 +11,7 @@ from app.models.drug import Drug
 from app.models.drug_interaction import DrugInteraction
 from app.models.chat_message import ChatMessage
 from app.models.user_settings import UserSettings
+from app.models.token_blacklist import TokenBlacklist
 
 __all__ = [
     "Base",
@@ -24,4 +25,5 @@ __all__ = [
     "DrugInteraction",
     "ChatMessage",
     "UserSettings",
+    "TokenBlacklist",
 ]

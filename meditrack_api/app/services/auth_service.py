@@ -4,19 +4,29 @@ Authentication service: user registration, login, JWT management.
 
 import uuid
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from typing import Optional
 
-from app.models.user import User
-from app.schemas.auth import SignupRequest, TokenResponse, UserProfile
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import AuthenticationError, ResourceNotFoundError, ValidationError
 from app.core.security import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
-    decode_token
+    decode_token,
+    hash_password,
+    verify_password,
 )
-from app.core.exceptions import AuthenticationError, ValidationError
+from app.models.token_blacklist import TokenBlacklist
+from app.models.user import User
+from app.schemas.auth import (
+    PasswordChangeRequest,
+    PasswordChangeResponse,
+    ProfileUpdateRequest,
+    SignupRequest,
+    TokenResponse,
+    UserProfile,
+)
 
 
 class AuthService:
@@ -142,3 +152,170 @@ class AuthService:
             token_type="bearer",
             user=UserProfile.model_validate(user)
         )
+
+    async def logout(self, refresh_token: str, user_id: str) -> dict:
+        """
+        Logout user by blacklisting refresh token.
+
+        Args:
+            refresh_token: JWT refresh token to blacklist
+            user_id: User ID
+
+        Returns:
+            Success message
+        """
+        # Decode token to get expiration
+        payload = decode_token(refresh_token)
+
+        if payload.get("type") != "refresh":
+            raise AuthenticationError("Invalid token type")
+
+        # Extract expiration
+        exp_timestamp = payload.get("exp")
+        if not exp_timestamp:
+            raise AuthenticationError("Token missing expiration")
+
+        expires_at = datetime.utcfromtimestamp(exp_timestamp)
+
+        # Add to blacklist
+        blacklist_entry = TokenBlacklist(
+            id=str(uuid.uuid4()),
+            token=refresh_token,
+            user_id=user_id,
+            expires_at=expires_at,
+        )
+
+        self.db.add(blacklist_entry)
+        await self.db.commit()
+
+        return {"message": "Logged out successfully"}
+
+    async def is_token_blacklisted(self, token: str) -> bool:
+        """
+        Check if token is blacklisted.
+
+        Args:
+            token: JWT token to check
+
+        Returns:
+            True if token is blacklisted
+        """
+        result = await self.db.execute(
+            select(TokenBlacklist).where(TokenBlacklist.token == token)
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def change_password(
+        self, user_id: str, request: PasswordChangeRequest
+    ) -> PasswordChangeResponse:
+        """
+        Change user password after verifying current password.
+
+        Args:
+            user_id: User ID
+            request: Password change request with current and new passwords
+
+        Returns:
+            Password change confirmation
+
+        Raises:
+            ResourceNotFoundError: If user not found
+            AuthenticationError: If current password is incorrect
+        """
+        # Get user
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ResourceNotFoundError("User", user_id)
+
+        # Verify current password
+        if not verify_password(request.current_password, user.hashed_password):
+            raise AuthenticationError("Current password is incorrect")
+
+        # Hash and update new password
+        user.hashed_password = hash_password(request.new_password)
+        user.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+
+        return PasswordChangeResponse(
+            message="Password changed successfully", changed_at=user.updated_at
+        )
+
+    async def update_profile(
+        self, user_id: str, updates: ProfileUpdateRequest
+    ) -> UserProfile:
+        """
+        Update user profile information.
+
+        Args:
+            user_id: User ID
+            updates: Profile fields to update
+
+        Returns:
+            Updated user profile
+
+        Raises:
+            ResourceNotFoundError: If user not found
+            ValidationError: If email already in use
+        """
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ResourceNotFoundError("User", user_id)
+
+        # Check email uniqueness if changing
+        if updates.email and updates.email != user.email:
+            existing = await self.db.execute(
+                select(User).where(User.email == updates.email)
+            )
+            if existing.scalar_one_or_none():
+                raise ValidationError("Email already in use")
+
+        # Apply updates
+        update_data = updates.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(user, field, value)
+
+        user.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return UserProfile.model_validate(user)
+
+    async def update_avatar(self, user_id: str, avatar_url: str) -> UserProfile:
+        """
+        Update user avatar URL.
+
+        Args:
+            user_id: User ID
+            avatar_url: New avatar URL
+
+        Returns:
+            Updated user profile
+
+        Raises:
+            ResourceNotFoundError: If user not found
+        """
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ResourceNotFoundError("User", user_id)
+
+        # Delete old avatar if exists
+        if user.avatar_url:
+            from app.core.storage import delete_avatar
+
+            await delete_avatar(user.avatar_url)
+
+        user.avatar_url = avatar_url
+        user.updated_at = datetime.utcnow()
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return UserProfile.model_validate(user)

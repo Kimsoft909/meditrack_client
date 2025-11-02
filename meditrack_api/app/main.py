@@ -4,15 +4,18 @@ FastAPI application initialization with CORS, middleware, and routing.
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.database import init_db, close_db
-from app.core.middleware import RequestIDMiddleware, TimingMiddleware
 from app.core.logging_config import setup_logging
-from app.api.v1.router import api_router
+from app.core.middleware import RequestIDMiddleware, TimingMiddleware
 from app.utils.cache import get_redis_client, close_redis
 
 logger = logging.getLogger(__name__)
@@ -63,6 +66,11 @@ app.add_middleware(TimingMiddleware)
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
+
+# Mount static files for avatar uploads
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/health", tags=["Health"])
