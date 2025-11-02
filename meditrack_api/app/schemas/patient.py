@@ -1,19 +1,29 @@
-"""Patient schemas."""
+"""
+Patient schemas with domain-specific validators.
+Integrates validators from utils.validators for consistent medical data validation.
+"""
 
 from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.utils.validators import (
+    validate_phone_number,
+    validate_blood_type,
+    validate_date_not_future,
+    validate_email_format
+)
+
 
 class PatientBase(BaseModel):
-    """Base patient fields."""
+    """Base patient fields with domain validators."""
 
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     date_of_birth: date
     sex: str = Field(..., pattern="^(M|F|Other)$")
-    blood_type: Optional[str] = Field(None, pattern="^(A|B|AB|O)[+-]?$")
+    blood_type: Optional[str] = None
     contact_number: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
@@ -22,6 +32,30 @@ class PatientBase(BaseModel):
     allergies: Optional[str] = None
     chronic_conditions: Optional[str] = None
     notes: Optional[str] = None
+    
+    @field_validator('blood_type')
+    @classmethod
+    def validate_blood_type_field(cls, v):
+        """Validate blood type using medical domain validator."""
+        return validate_blood_type(v)
+    
+    @field_validator('contact_number')
+    @classmethod
+    def validate_phone(cls, v):
+        """Validate phone number format."""
+        return validate_phone_number(v)
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        """Validate email format."""
+        return validate_email_format(v)
+    
+    @field_validator('date_of_birth')
+    @classmethod
+    def validate_dob(cls, v):
+        """Ensure date of birth is not in the future."""
+        return validate_date_not_future(v)
 
 
 class PatientCreate(PatientBase):

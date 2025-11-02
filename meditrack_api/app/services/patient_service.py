@@ -27,7 +27,12 @@ class PatientService:
         self.patient_repo = PatientRepository(db)
     
     async def create_patient(self, patient_data: PatientCreate) -> PatientResponse:
-        """Create new patient record with calculated fields."""
+        """
+        Create new patient record with calculated fields.
+        
+        Uses centralized utilities for BMI and age calculations to maintain
+        single source of truth for medical formulas.
+        """
         bmi = calculate_bmi(patient_data.weight, patient_data.height)
         age = validate_age_from_dob(patient_data.date_of_birth)
         
@@ -72,19 +77,34 @@ class PatientService:
         status_filter: str = None,
         risk_filter: str = None
     ) -> PatientListResponse:
-        """Get paginated patient list with filters using repository and pagination utilities."""
+        """
+        Get paginated patient list with filters.
+        
+        Uses standardized pagination utility for consistent response format
+        and repository methods for optimized search queries.
+        """
         from sqlalchemy import select
         
-        # Use repository for search if provided
+        # Use repository's optimized search if search query provided
         if search:
-            patients = await self.patient_repo.search_by_name(search, limit=page_size)
-            total = len(patients)
+            patients = await self.patient_repo.search_by_name(search, limit=100)
+            
+            # Apply additional filters manually after search
+            if status_filter:
+                patients = [p for p in patients if p.status == status_filter]
+            if risk_filter:
+                patients = [p for p in patients if p.risk_level == risk_filter]
+            
+            # Manual pagination for search results
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_patients = patients[start_idx:end_idx]
             
             return PatientListResponse(
-                total=total,
+                total=len(patients),
                 page=page,
                 page_size=page_size,
-                patients=[PatientResponse.model_validate(p) for p in patients]
+                patients=[PatientResponse.model_validate(p) for p in paginated_patients]
             )
         
         # Build query with filters
@@ -99,7 +119,7 @@ class PatientService:
         # Add default ordering
         query = query.order_by(Patient.admission_date.desc())
         
-        # Use pagination utility
+        # Use standardized pagination utility
         params = PaginationParams(page=page, page_size=page_size)
         paginated = await paginate_query(self.db, query, params)
         

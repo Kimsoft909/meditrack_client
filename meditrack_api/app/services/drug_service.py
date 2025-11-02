@@ -1,52 +1,35 @@
 """
 Drug database search and FDA API integration.
+Refactored to use DrugRepository for optimized fuzzy search.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from rapidfuzz import fuzz, process
 import httpx
 
-from app.models.drug import Drug
 from app.schemas.drug_checker import DrugSearchResponse, FDADrugInfoResponse
 from app.core.config import settings
 from app.core.exceptions import ResourceNotFoundError
+from app.db.repositories.drug_repo import DrugRepository
 
 
 class DrugService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.drug_repo = DrugRepository(db)
     
     async def search_drugs(self, query: str, limit: int = 10) -> list[DrugSearchResponse]:
-        """Fuzzy search drugs by name."""
-        result = await self.db.execute(select(Drug))
-        all_drugs = result.scalars().all()
+        """
+        Fuzzy search drugs using repository's optimized database query.
         
-        if not all_drugs:
-            return []
-        
-        # Fuzzy matching
-        drug_names = [f"{d.name}|{d.id}" for d in all_drugs]
-        matches = process.extract(
-            query,
-            drug_names,
-            scorer=fuzz.WRatio,
-            limit=limit,
-            score_cutoff=70
-        )
-        
-        matched_ids = [m[0].split("|")[1] for m in matches]
-        matched_drugs = [d for d in all_drugs if d.id in matched_ids]
-        
-        return [DrugSearchResponse.model_validate(d) for d in matched_drugs]
+        Critical performance fix: Uses database-level fuzzy search instead of
+        loading entire drug table into memory.
+        """
+        drugs = await self.drug_repo.fuzzy_search(query, limit=limit, threshold=70)
+        return [DrugSearchResponse.model_validate(d) for d in drugs]
     
     async def get_fda_info(self, drug_id: str) -> FDADrugInfoResponse:
-        """Fetch drug information from FDA OpenFDA API."""
-        result = await self.db.execute(select(Drug).where(Drug.id == drug_id))
-        drug = result.scalar_one_or_none()
-        
-        if not drug:
-            raise ResourceNotFoundError("Drug", drug_id)
+        """Fetch drug information from FDA OpenFDA API using repository."""
+        drug = await self.drug_repo.get_by_id_or_404(drug_id)
         
         # Try FDA API call
         try:

@@ -1,22 +1,73 @@
-"""Vital signs schemas."""
+"""
+Vital signs schemas with medical range validators.
+Integrates physiological range validators for data integrity.
+"""
 
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.utils.validators import validate_vital_ranges
 
 
 class VitalReadingCreate(BaseModel):
-    """Create vital reading request."""
+    """Create vital reading request with medical validators."""
 
-    blood_pressure_systolic: float = Field(..., ge=50, le=250)
-    blood_pressure_diastolic: float = Field(..., ge=30, le=150)
-    heart_rate: float = Field(..., ge=30, le=250)
-    temperature: float = Field(..., ge=30.0, le=45.0)
-    oxygen_saturation: float = Field(..., ge=0, le=100)
-    respiratory_rate: Optional[float] = Field(None, ge=5, le=60)
-    blood_glucose: Optional[float] = Field(None, ge=20, le=600)
+    blood_pressure_systolic: float
+    blood_pressure_diastolic: float
+    heart_rate: float
+    temperature: float
+    oxygen_saturation: float
+    respiratory_rate: Optional[float] = None
+    blood_glucose: Optional[float] = None
     notes: Optional[str] = None
+    
+    @field_validator('blood_pressure_systolic')
+    @classmethod
+    def validate_systolic(cls, v):
+        """Validate systolic BP is physiologically plausible."""
+        return validate_vital_ranges('blood_pressure_systolic', v)
+    
+    @field_validator('blood_pressure_diastolic')
+    @classmethod
+    def validate_diastolic(cls, v):
+        """Validate diastolic BP is physiologically plausible."""
+        return validate_vital_ranges('blood_pressure_diastolic', v)
+    
+    @field_validator('heart_rate')
+    @classmethod
+    def validate_hr(cls, v):
+        """Validate heart rate is physiologically plausible."""
+        return validate_vital_ranges('heart_rate', v)
+    
+    @field_validator('temperature')
+    @classmethod
+    def validate_temp(cls, v):
+        """Validate temperature is physiologically plausible."""
+        return validate_vital_ranges('temperature', v)
+    
+    @field_validator('oxygen_saturation')
+    @classmethod
+    def validate_o2(cls, v):
+        """Validate oxygen saturation is physiologically plausible."""
+        return validate_vital_ranges('oxygen_saturation', v)
+    
+    @field_validator('respiratory_rate')
+    @classmethod
+    def validate_rr(cls, v):
+        """Validate respiratory rate if provided."""
+        if v is not None:
+            return validate_vital_ranges('respiratory_rate', v)
+        return v
+    
+    @field_validator('blood_glucose')
+    @classmethod
+    def validate_glucose(cls, v):
+        """Validate glucose level if provided."""
+        if v is not None:
+            return validate_vital_ranges('glucose_level', v)
+        return v
 
 
 class VitalResponse(VitalReadingCreate):

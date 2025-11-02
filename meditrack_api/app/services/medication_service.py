@@ -1,5 +1,6 @@
 """
 Medication management service (prescription handling).
+Refactored to use PatientRepository for patient validation.
 """
 
 import uuid
@@ -9,18 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.medication import Medication
-from app.models.patient import Patient
 from app.schemas.medication import (
     MedicationCreate,
     MedicationUpdate,
     MedicationResponse
 )
 from app.core.exceptions import ResourceNotFoundError
+from app.db.repositories.patient_repo import PatientRepository
 
 
 class MedicationService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.patient_repo = PatientRepository(db)
     
     async def create_medication(
         self,
@@ -28,12 +30,8 @@ class MedicationService:
         medication_data: MedicationCreate
     ) -> MedicationResponse:
         """Add new medication to patient's regimen."""
-        # Verify patient exists
-        result = await self.db.execute(
-            select(Patient).where(Patient.id == patient_id)
-        )
-        if not result.scalar_one_or_none():
-            raise ResourceNotFoundError("Patient", patient_id)
+        # Use repository to verify patient exists with proper error handling
+        await self.patient_repo.get_by_id_or_404(patient_id)
         
         medication = Medication(
             id=str(uuid.uuid4()),
