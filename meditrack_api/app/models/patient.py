@@ -44,9 +44,9 @@ class Patient(Base, TimestampMixin):
     address = Column(Text, nullable=True)
 
     # Clinical data
-    weight = Column(Float, nullable=False)  # kg
-    height = Column(Float, nullable=False)  # meters
-    bmi = Column(Float, nullable=False)
+    weight = Column(Float, nullable=False)  # in kg
+    height = Column(Float, nullable=False)  # in meters
+    bmi = Column(Float, nullable=False) # client will autocalculate from given height and weight. 
     status = Column(SQLEnum(PatientStatus, name="patient_status"), default="active")
     risk_level = Column(SQLEnum(RiskLevel, name="risk_level"), default="low")
     admission_date = Column(Date, default=date.today)

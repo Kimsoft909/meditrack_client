@@ -1,5 +1,5 @@
 """
-Medication management service.
+Medication management service (prescription handling).
 """
 
 import uuid
