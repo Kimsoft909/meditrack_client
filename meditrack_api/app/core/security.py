@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError
 
-# Password hashing context (bcrypt with 12 rounds)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing context (bcrypt)
+pwd_context = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
