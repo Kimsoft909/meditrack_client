@@ -6,7 +6,7 @@ Reads from .env.local and validates all environment variables.
 import os
 from dotenv import load_dotenv
 from functools import lru_cache
-from typing import List
+from typing import List, Set
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
 
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 10
-    ALLOWED_EXTENSIONS: set[str] = {"pdf", "csv", "txt"}
+    ALLOWED_EXTENSIONS: Set[str] = {"pdf", "csv", "txt"}
 
     model_config = SettingsConfigDict(
         env_file=".env.local", env_file_encoding="utf-8", case_sensitive=True
