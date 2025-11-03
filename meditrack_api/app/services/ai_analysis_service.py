@@ -304,22 +304,32 @@ Focus on clinical significance and actionable insights. Use professional medical
         return recommendations
     
     async def save_report(self, report: AnalysisReportResponse) -> None:
-        """Save analysis report to database."""
-        analysis = AIAnalysis(
-            id=str(uuid.uuid4()),
-            report_id=report.report_id,
-            patient_id=report.patient.id,
-            report_date=report.report_date,
-            generated_by=report.generated_by,
-            analysis_type="comprehensive",
-            executive_summary=report.executive_summary,
-            overall_health_score=report.overall_health_score,
-            sections=report.sections,
-            metadata=report.metadata
-        )
+        """Save analysis report to database with own session for background tasks."""
+        # Create new session for background task
+        from app.core.database import AsyncSessionLocal
         
-        self.db.add(analysis)
-        await self.db.commit()
+        async with AsyncSessionLocal() as session:
+            try:
+                analysis = AIAnalysis(
+                    id=str(uuid.uuid4()),
+                    report_id=report.report_id,
+                    patient_id=report.patient.id,
+                    report_date=report.report_date,
+                    generated_by=report.generated_by,
+                    analysis_type="comprehensive",
+                    executive_summary=report.executive_summary,
+                    overall_health_score=report.overall_health_score,
+                    sections=report.sections,
+                    metadata=report.metadata
+                )
+                
+                session.add(analysis)
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
     
     async def get_report_by_id(self, report_id: str) -> AnalysisReportResponse:
         """Retrieve saved analysis report."""

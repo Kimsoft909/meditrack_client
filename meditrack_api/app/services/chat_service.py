@@ -15,7 +15,8 @@ from app.ai.prompts import MEDICAL_ASSISTANT_SYSTEM_PROMPT
 
 
 class ChatService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: Optional[AsyncSession] = None):
+        """Initialize chat service. DB can be None for streaming endpoints."""
         self.db = db
         self.grok = GrokClient()
     
@@ -25,62 +26,73 @@ class ChatService:
         message: str,
         conversation_id: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
-        """Stream chat response token by token."""
+        """Stream chat response token by token with own session management."""
         # Generate conversation ID if not provided
         if not conversation_id:
             conversation_id = str(uuid.uuid4())
         
-        # Retrieve conversation history
-        history_query = select(ChatMessage).where(
-            ChatMessage.user_id == user_id,
-            ChatMessage.conversation_id == conversation_id
-        ).order_by(ChatMessage.created_at.desc()).limit(10)
+        # Create a new session for the entire streaming lifecycle
+        from app.core.database import AsyncSessionLocal
         
-        history_result = await self.db.execute(history_query)
-        history = list(history_result.scalars().all())
-        history.reverse()  # Chronological order
-        
-        # Build message context
-        messages = [{"role": "system", "content": MEDICAL_ASSISTANT_SYSTEM_PROMPT}]
-        for msg in history:
-            messages.append({"role": msg.role, "content": msg.content})
-        messages.append({"role": "user", "content": message})
-        
-        # Save user message
-        user_msg = ChatMessage(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            role="user",
-            content=message,
-            conversation_id=conversation_id
-        )
-        self.db.add(user_msg)
-        await self.db.commit()
-        
-        # Stream response
-        assistant_response = ""
-        try:
-            async for chunk in self.grok.stream_completion(messages):
-                assistant_response += chunk
-                # Escape quotes for JSON
-                escaped_chunk = chunk.replace('"', '\\"')
-                yield json.dumps({"type": "token", "content": escaped_chunk})
-        except Exception as e:
-            yield json.dumps({"type": "error", "content": str(e)})
-            return
-        
-        # Save assistant response
-        assistant_msg = ChatMessage(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            role="assistant",
-            content=assistant_response,
-            conversation_id=conversation_id
-        )
-        self.db.add(assistant_msg)
-        await self.db.commit()
-        
-        yield json.dumps({"type": "done", "conversation_id": conversation_id})
+        async with AsyncSessionLocal() as session:
+            try:
+                # Retrieve conversation history
+                history_query = select(ChatMessage).where(
+                    ChatMessage.user_id == user_id,
+                    ChatMessage.conversation_id == conversation_id
+                ).order_by(ChatMessage.created_at.desc()).limit(10)
+                
+                history_result = await session.execute(history_query)
+                history = list(history_result.scalars().all())
+                history.reverse()  # Chronological order
+                
+                # Build message context
+                messages = [{"role": "system", "content": MEDICAL_ASSISTANT_SYSTEM_PROMPT}]
+                for msg in history:
+                    messages.append({"role": msg.role, "content": msg.content})
+                messages.append({"role": "user", "content": message})
+                
+                # Save user message
+                user_msg = ChatMessage(
+                    id=str(uuid.uuid4()),
+                    user_id=user_id,
+                    role="user",
+                    content=message,
+                    conversation_id=conversation_id
+                )
+                session.add(user_msg)
+                await session.commit()
+                
+                # Stream response
+                assistant_response = ""
+                try:
+                    async for chunk in self.grok.stream_completion(messages):
+                        assistant_response += chunk
+                        # Escape quotes for JSON
+                        escaped_chunk = chunk.replace('"', '\\"')
+                        yield json.dumps({"type": "token", "content": escaped_chunk})
+                except Exception as e:
+                    yield json.dumps({"type": "error", "content": str(e)})
+                    return
+                
+                # Save assistant response
+                assistant_msg = ChatMessage(
+                    id=str(uuid.uuid4()),
+                    user_id=user_id,
+                    role="assistant",
+                    content=assistant_response,
+                    conversation_id=conversation_id
+                )
+                session.add(assistant_msg)
+                await session.commit()
+                
+                yield json.dumps({"type": "done", "conversation_id": conversation_id})
+            
+            except Exception as e:
+                await session.rollback()
+                yield json.dumps({"type": "error", "content": str(e)})
+            finally:
+                await session.close()
     
     async def get_chat_history(
         self,

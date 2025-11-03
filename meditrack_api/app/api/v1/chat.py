@@ -20,11 +20,11 @@ router = APIRouter(prefix="/chat", tags=["AI Chat"])
 @router.post("/send")
 async def send_message_streaming(
     request: ChatMessageRequest,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Send message to AI assistant with streaming response."""
-    service = ChatService(db)
+    # ChatService creates its own session for streaming
+    service = ChatService(None)
     
     async def event_generator():
         async for chunk in service.stream_chat_response(
