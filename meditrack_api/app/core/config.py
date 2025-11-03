@@ -54,13 +54,13 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.strip("[]").split(",")]
         return v
 
-    # AI Integration (Using HuggingFace Inference API - keep GROK_ prefix for compatibility)
-    GROK_API_KEY: str = Field(..., description="HuggingFace Inference API key")
-    GROK_API_BASE_URL: str = "https://api-inference.huggingface.co/models"
-    GROK_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.2"
+    # AI Integration (Using HuggingFace Router API - keep GROK_ prefix for compatibility)
+    GROK_API_KEY: str = Field(..., description="HuggingFace Router API key")
+    GROK_API_BASE_URL: str = "https://router.huggingface.co/v1"
+    GROK_MODEL: str = "meta-llama/Llama-3.1-8B-Instruct"
     GROK_MAX_TOKENS: int = 2048
     GROK_TEMPERATURE: float = 0.7
-    GROK_TIMEOUT_SECONDS: int = 120  # HF can be slower on cold starts
+    GROK_TIMEOUT_SECONDS: int = 120
 
     # FDA API
     FDA_API_KEY: str | None = None

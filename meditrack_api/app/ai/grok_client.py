@@ -1,4 +1,4 @@
-"""Async HuggingFace Inference API client with retry logic and rate limiting."""
+"""Async HuggingFace Router API client with OpenAI-compatible format."""
 
 import asyncio
 import json
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class GrokClient:
-    """HuggingFace Inference API client (keeps 'Grok' name for compatibility)."""
+    """HuggingFace Router API client using OpenAI-compatible format (keeps 'Grok' name for compatibility)."""
     
     def __init__(self):
         self.base_url = settings.GROK_API_BASE_URL
@@ -28,27 +28,27 @@ class GrokClient:
         max_tokens: int = 1024,
         temperature: float = 0.7
     ) -> str:
-        """Generate non-streaming completion using HuggingFace Inference API."""
+        """Generate non-streaming completion using HuggingFace Router API (OpenAI-compatible)."""
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             for attempt in range(self.max_retries):
                 try:
                     response = await client.post(
-                        f"{self.base_url}/{self.model}",
+                        f"{self.base_url}/chat/completions",
                         headers={
                             "Authorization": f"Bearer {self.api_key}",
                             "Content-Type": "application/json"
                         },
                         json={
-                            "inputs": prompt,
-                            "parameters": {
-                                "max_new_tokens": max_tokens,
-                                "temperature": temperature,
-                                "return_full_text": False
-                            }
+                            "model": self.model,
+                            "messages": [
+                                {"role": "user", "content": prompt}
+                            ],
+                            "max_tokens": max_tokens,
+                            "temperature": temperature,
+                            "stream": False
                         }
                     )
                     
-                    # Handle HuggingFace-specific errors
                     if response.status_code == 503:
                         logger.warning(f"Model loading (cold start), attempt {attempt + 1}/{self.max_retries}")
                         if attempt < self.max_retries - 1:
@@ -70,11 +70,8 @@ class GrokClient:
                     response.raise_for_status()
                     data = response.json()
                     
-                    # HF returns array or object depending on model
-                    if isinstance(data, list):
-                        return data[0].get("generated_text", "")
-                    else:
-                        return data.get("generated_text", "")
+                    # OpenAI-compatible format
+                    return data["choices"][0]["message"]["content"]
                 
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code == 403:
@@ -89,6 +86,12 @@ class GrokClient:
                     if attempt == self.max_retries - 1:
                         raise
                     await asyncio.sleep(1)
+                
+                except KeyError as e:
+                    logger.error(f"Invalid response format: {e}")
+                    if attempt == self.max_retries - 1:
+                        raise Exception("Invalid response format from API")
+                    await asyncio.sleep(1)
         
         return "Unable to generate response"
     
@@ -97,26 +100,20 @@ class GrokClient:
         messages: list[dict],
         temperature: float = 0.7
     ) -> AsyncGenerator[str, None]:
-        """Stream completion token by token using HuggingFace Inference API."""
-        # Convert chat messages to single prompt (HF doesn't have native chat format)
-        prompt = self._format_messages_as_prompt(messages)
-        
+        """Stream completion token by token using HuggingFace Router API (OpenAI-compatible SSE)."""
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
                 async with client.stream(
                     "POST",
-                    f"{self.base_url}/{self.model}",
+                    f"{self.base_url}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json"
                     },
                     json={
-                        "inputs": prompt,
-                        "parameters": {
-                            "max_new_tokens": 1024,
-                            "temperature": temperature,
-                            "return_full_text": False
-                        },
+                        "model": self.model,
+                        "messages": messages,
+                        "temperature": temperature,
                         "stream": True
                     }
                 ) as response:
@@ -125,41 +122,36 @@ class GrokClient:
                         yield "Model is loading, please wait..."
                         return
                     
+                    if response.status_code == 429:
+                        logger.warning("Rate limited")
+                        yield "Rate limit exceeded, please try again later"
+                        return
+                    
                     response.raise_for_status()
                     
+                    # Parse OpenAI-compatible SSE stream
                     async for line in response.aiter_lines():
                         if not line:
                             continue
                         
-                        try:
-                            chunk_json = json.loads(line)
-                            if "token" in chunk_json:
-                                text = chunk_json["token"].get("text", "")
-                                if text:
-                                    yield text
-                            elif "generated_text" in chunk_json:
-                                # Final chunk
+                        # SSE format: "data: {json}"
+                        if line.startswith("data: "):
+                            data_str = line[6:].strip()
+                            
+                            if data_str == "[DONE]":
                                 break
-                        except json.JSONDecodeError:
-                            continue
+                            
+                            try:
+                                chunk_json = json.loads(data_str)
+                                delta = chunk_json.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                
+                                if content:
+                                    yield content
+                            
+                            except json.JSONDecodeError:
+                                continue
             
             except Exception as e:
                 logger.error(f"Streaming error: {e}")
                 yield f"Error: {str(e)}"
-    
-    def _format_messages_as_prompt(self, messages: list[dict]) -> str:
-        """Convert chat messages to single prompt for HuggingFace models."""
-        formatted = ""
-        for msg in messages:
-            role = msg.get("role", "")
-            content = msg.get("content", "")
-            
-            if role == "system":
-                formatted += f"System: {content}\n\n"
-            elif role == "user":
-                formatted += f"User: {content}\n\n"
-            elif role == "assistant":
-                formatted += f"Assistant: {content}\n\n"
-        
-        formatted += "Assistant: "  # Prompt for next assistant response
-        return formatted
