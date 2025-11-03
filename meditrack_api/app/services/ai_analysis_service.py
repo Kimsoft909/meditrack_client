@@ -242,6 +242,9 @@ Focus on clinical significance and actionable insights. Use professional medical
             summary = await self.grok.generate_completion(prompt, max_tokens=150)
             return summary.strip()
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"❌ Grok AI failed to generate summary: {type(e).__name__}: {str(e)}")
             return f"Patient {patient.first_name} {patient.last_name} requires continued monitoring. {vitals_narrative} {meds_narrative}"
     
     def _calculate_health_score(
@@ -310,11 +313,12 @@ Focus on clinical significance and actionable insights. Use professional medical
             report_id=report.report_id,
             patient_id=report.patient.id,
             report_date=report.report_date,
+            generated_by=report.generated_by,
             analysis_type="comprehensive",
             executive_summary=report.executive_summary,
-            recommendations=report.sections.get("recommendations", []),
-            confidence_score=report.metadata.get("confidence", 0),
-            data_points_analyzed=report.metadata.get("data_points_analyzed", 0)
+            overall_health_score=report.overall_health_score,
+            sections=report.sections,
+            metadata=report.metadata
         )
         
         self.db.add(analysis)
