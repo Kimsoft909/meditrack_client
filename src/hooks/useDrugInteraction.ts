@@ -3,8 +3,9 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { Drug, DrugInteraction } from '@/types/drug';
-import { drugInteractionService } from '@/services/drugInteractionService';
+import { drugService } from '@/services/drugService';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 
 export function useDrugInteraction() {
   const [selectedDrugs, setSelectedDrugs] = useState<Drug[]>([]);
@@ -69,7 +70,7 @@ export function useDrugInteraction() {
     });
   }, []);
 
-  // Check for interactions
+  // Check for interactions using backend API
   const checkInteractions = useCallback(async () => {
     if (selectedDrugs.length < 2) {
       toast({
@@ -82,30 +83,41 @@ export function useDrugInteraction() {
 
     setIsChecking(true);
 
-    // Simulate processing delay for realism
-    await new Promise(resolve => setTimeout(resolve, 400));
+    try {
+      logger.debug('Checking drug interactions', { drugCount: selectedDrugs.length });
+      
+      const drugIds = selectedDrugs.map(drug => drug.id);
+      const foundInteractions = await drugService.checkInteractions(drugIds);
+      
+      setInteractions(foundInteractions);
 
-    const foundInteractions = drugInteractionService.checkInteractions(selectedDrugs);
-    setInteractions(foundInteractions);
+      // Provide feedback based on results
+      if (foundInteractions.length === 0) {
+        toast({
+          title: "No Interactions Found",
+          description: `Analysis complete. No known interactions between ${selectedDrugs.length} drugs.`,
+          variant: "default",
+        });
+      } else {
+        const contraindicated = foundInteractions.filter(i => i.severity === 'contraindicated').length;
+        const major = foundInteractions.filter(i => i.severity === 'major').length;
 
-    setIsChecking(false);
-
-    // Provide feedback based on results
-    if (foundInteractions.length === 0) {
+        toast({
+          title: contraindicated > 0 ? "⚠️ Critical Interactions Found" : "Interactions Detected",
+          description: `Found ${foundInteractions.length} interaction(s). ${contraindicated > 0 ? `${contraindicated} CONTRAINDICATED` : ''} ${major > 0 ? `${major} MAJOR` : ''}`.trim(),
+          variant: contraindicated > 0 ? "destructive" : "default",
+        });
+      }
+    } catch (error: any) {
+      logger.error('Failed to check interactions', error);
       toast({
-        title: "No Interactions Found",
-        description: `Analysis complete. No known interactions between ${selectedDrugs.length} drugs.`,
-        variant: "default",
+        title: "Error",
+        description: error.message || "Failed to check drug interactions",
+        variant: "destructive",
       });
-    } else {
-      const contraindicated = foundInteractions.filter(i => i.severity === 'contraindicated').length;
-      const major = foundInteractions.filter(i => i.severity === 'major').length;
-
-      toast({
-        title: contraindicated > 0 ? "⚠️ Critical Interactions Found" : "Interactions Detected",
-        description: `Found ${foundInteractions.length} interaction(s). ${contraindicated > 0 ? `${contraindicated} CONTRAINDICATED` : ''} ${major > 0 ? `${major} MAJOR` : ''}`.trim(),
-        variant: contraindicated > 0 ? "destructive" : "default",
-      });
+      setInteractions([]);
+    } finally {
+      setIsChecking(false);
     }
   }, [selectedDrugs]);
 

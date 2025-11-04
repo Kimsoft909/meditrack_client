@@ -24,6 +24,11 @@ export const API_ENDPOINTS = {
     deleteConversation: (conversationId: string) => 
       `${API_BASE_URL}/api/v1/chat/history/${conversationId}`,
   },
+  drugs: {
+    search: `${API_BASE_URL}/api/v1/drugs/search`,
+    checkInteractions: `${API_BASE_URL}/api/v1/drugs/check-interactions`,
+    fdaInfo: (drugId: string) => `${API_BASE_URL}/api/v1/drugs/fda-info/${drugId}`,
+  },
   dashboard: `${API_BASE_URL}/api/v1/dashboard`,
   settings: `${API_BASE_URL}/api/v1/settings`,
 };

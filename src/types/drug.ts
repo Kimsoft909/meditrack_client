@@ -1,12 +1,24 @@
 // Comprehensive drug data structures following FDA/EMA/WHO standards
 
+// Backend API response types (snake_case from API)
+export interface DrugSearchResult {
+  id: string;
+  name: string;
+  generic_name: string | null;
+  brand_names: string[] | null;
+  drug_class: string | null;
+  indication: string | null;
+}
+
+// Frontend drug model (camelCase for UI)
 export interface Drug {
   id: string;
   name: string;
   genericName: string;
   brandNames: string[];
   drugClass: string[];
-  mechanism: string;
+  indication?: string;
+  mechanism?: string;
   fdaApprovalDate?: Date;
   rxcui?: string; // RxNorm Concept Unique Identifier
 }
@@ -36,7 +48,18 @@ export interface Reference {
   url?: string;
 }
 
-// Comprehensive interaction model
+// Backend interaction response (from API)
+export interface InteractionResponse {
+  drug1_name: string;
+  drug2_name: string;
+  severity: string;
+  description: string;
+  clinical_effects: string | null;
+  management: string | null;
+  evidence_level: string | null;
+}
+
+// Frontend interaction model (camelCase for UI)
 export interface DrugInteraction {
   id: string;
   drug1: Drug;
@@ -51,7 +74,19 @@ export interface DrugInteraction {
   lastUpdated: Date;
 }
 
-// FDA drug information
+// Backend FDA info response (from API)
+export interface FDADrugInfoResponse {
+  drug_name: string;
+  active_ingredient: string;
+  indication: string;
+  dosage: string;
+  warnings: string[];
+  adverse_reactions: string[];
+  contraindications: string[];
+  fda_label: string;
+}
+
+// Frontend FDA drug information (camelCase for UI)
 export interface FDADrugInfo {
   drugName: string;
   activeIngredient: string;
@@ -65,7 +100,7 @@ export interface FDADrugInfo {
   approvalDate?: string;
 }
 
-// Search result type for autocomplete
-export interface DrugSearchResult extends Drug {
-  score?: number; // For fuzzy search ranking
+// Interaction check request
+export interface InteractionCheckRequest {
+  drug_ids: string[];
 }

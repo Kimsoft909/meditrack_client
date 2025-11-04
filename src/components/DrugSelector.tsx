@@ -1,11 +1,12 @@
 // Drug search and selection component
 // Provides autocomplete search with keyboard navigation
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Search, Pill } from 'lucide-react';
 import { Drug } from '@/types/drug';
-import { drugInteractionService } from '@/services/drugInteractionService';
+import { drugService } from '@/services/drugService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { logger } from '@/utils/logger';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,14 +23,33 @@ export function DrugSelector({ selectedDrugs, onAddDrug, onRemoveDrug }: DrugSel
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchResults, setSearchResults] = useState<Drug[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Debounce search to prevent excessive operations during typing
-  const debouncedQuery = useDebounce(searchQuery, 200);
+  // Debounce search to prevent excessive API calls during typing
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Memoized search results for performance
-  const searchResults = useMemo(() => {
-    if (!debouncedQuery || debouncedQuery.length < 2) return [];
-    return drugInteractionService.searchDrugs(debouncedQuery);
+  // Fetch search results from backend API
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!debouncedQuery || debouncedQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await drugService.searchDrugs(debouncedQuery, 10);
+        setSearchResults(results);
+      } catch (error) {
+        logger.error('Drug search failed', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    fetchResults();
   }, [debouncedQuery]);
 
   // Handle drug selection from suggestions
@@ -91,8 +111,18 @@ export function DrugSelector({ selectedDrugs, onAddDrug, onRemoveDrug }: DrugSel
           />
         </div>
 
+        {/* Loading State */}
+        {showSuggestions && isSearching && (
+          <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-lg p-4 text-center text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              Searching...
+            </div>
+          </div>
+        )}
+
         {/* Autocomplete Suggestions */}
-        {showSuggestions && searchResults.length > 0 && (
+        {showSuggestions && !isSearching && searchResults.length > 0 && (
           <div
             id="drug-suggestions"
             className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-lg"
@@ -136,7 +166,7 @@ export function DrugSelector({ selectedDrugs, onAddDrug, onRemoveDrug }: DrugSel
         )}
 
         {/* No Results State */}
-        {showSuggestions && debouncedQuery.length >= 2 && searchResults.length === 0 && (
+        {showSuggestions && !isSearching && debouncedQuery.length >= 2 && searchResults.length === 0 && (
           <div className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-lg p-4 text-center text-sm text-muted-foreground">
             No medications found matching "{debouncedQuery}"
           </div>

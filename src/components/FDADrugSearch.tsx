@@ -4,8 +4,10 @@
 import { useState, useEffect } from 'react';
 import { Search, ExternalLink, AlertTriangle, Loader2, Info, Check, ChevronsUpDown } from 'lucide-react';
 import { FDADrugInfo, Drug } from '@/types/drug';
-import { drugInteractionService } from '@/services/drugInteractionService';
+import { drugService } from '@/services/drugService';
 import { useDebounce } from '@/hooks/useDebounce';
+import { logger } from '@/utils/logger';
+import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,19 +34,27 @@ export function FDADrugSearch() {
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Fuzzy search drugs as user types (mock data for now)
+  // Fuzzy search drugs using backend API
   useEffect(() => {
-    if (debouncedQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
+    const fetchResults = async () => {
+      if (debouncedQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
 
-    // Use existing mock searchDrugs method
-    const results = drugInteractionService.searchDrugs(debouncedQuery);
-    setSearchResults(results);
+      try {
+        const results = await drugService.searchDrugs(debouncedQuery, 10);
+        setSearchResults(results);
+      } catch (error) {
+        logger.error('Drug search failed', error);
+        setSearchResults([]);
+      }
+    };
+
+    fetchResults();
   }, [debouncedQuery]);
 
-  // Fetch FDA info when drug is selected (mock data for now)
+  // Fetch FDA info when drug is selected using backend API
   const handleDrugSelect = async (drug: Drug) => {
     setSelectedDrug(drug);
     setSearchQuery('');
@@ -54,14 +64,16 @@ export function FDADrugSearch() {
     setDrugInfo(null);
 
     try {
-      // Mock API delay for realism
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Use existing mock searchFDADrugInfo method
-      const info = await drugInteractionService.searchFDADrugInfo(drug.name);
+      logger.debug('Fetching FDA info', { drugId: drug.id });
+      const info = await drugService.getFDAInfo(drug.id);
       setDrugInfo(info);
-    } catch (error) {
-      console.error('Error fetching FDA drug info:', error);
+    } catch (error: any) {
+      logger.error('Failed to fetch FDA info', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to fetch drug information',
+        variant: 'destructive',
+      });
       setDrugInfo(null);
     } finally {
       setIsLoading(false);
