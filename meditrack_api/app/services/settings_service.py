@@ -58,7 +58,13 @@ class SettingsService:
         settings = result.scalar_one_or_none()
         
         if not settings:
-            settings = await self.get_settings(user_id)
+            # Create default settings first
+            await self.get_settings(user_id)
+            # Now query again to get the actual database object
+            result = await self.db.execute(
+                select(UserSettings).where(UserSettings.user_id == user_id)
+            )
+            settings = result.scalar_one()
         
         update_data = updates.model_dump(exclude_unset=True)
         for field, value in update_data.items():
