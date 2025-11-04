@@ -486,6 +486,26 @@ All colors MUST be HSL.
   }
 
   /* ==========================================
+     COMING SOON BADGE ANIMATION
+     ========================================== */
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes color-cycle {
+    0%, 100% { filter: hue-rotate(0deg); }
+    50% { filter: hue-rotate(60deg); }
+  }
+
+  .coming-soon-badge {
+    background: linear-gradient(270deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
+    background-size: 400% 400%;
+    animation: gradient-shift 3s ease infinite, color-cycle 6s ease infinite;
+  }
+
+  /* ==========================================
      FLOATING SIDEBAR STYLES
      ========================================== */
 

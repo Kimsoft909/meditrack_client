@@ -1,4 +1,4 @@
-// Compact form for adding vital readings
+// Compact form for adding all vital readings in horizontal layout
 
 import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,10 @@ import { VitalReadingInput } from '@/types/patient';
 
 interface AddVitalReadingFormProps {
   patientId: string;
-  vitalType: 'bp' | 'hr' | 'temp' | 'o2' | 'glucose';
   onSuccess?: () => void;
 }
 
-export const AddVitalReadingForm = memo(({ patientId, vitalType, onSuccess }: AddVitalReadingFormProps) => {
+export const AddVitalReadingForm = memo(({ patientId, onSuccess }: AddVitalReadingFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<VitalReadingInput>>({
     bloodPressureSystolic: 120,
@@ -56,15 +55,15 @@ export const AddVitalReadingForm = memo(({ patientId, vitalType, onSuccess }: Ad
         className="gap-1"
       >
         <Plus className="h-3 w-3" />
-        Add
+        Add Vitals
       </Button>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-3 border rounded-lg bg-muted/30">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold">New Reading</h4>
+    <form onSubmit={handleSubmit} className="space-y-3 p-4 border rounded-lg bg-card shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold">Add Vital Readings</h4>
         <Button 
           type="button" 
           size="sm" 
@@ -75,93 +74,94 @@ export const AddVitalReadingForm = memo(({ patientId, vitalType, onSuccess }: Ad
         </Button>
       </div>
 
-      {vitalType === 'bp' && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <Label htmlFor="systolic" className="text-xs">Systolic</Label>
+      {/* Horizontal Layout - All vitals in one row */}
+      <div className="flex flex-wrap items-end gap-2">
+        {/* Blood Pressure - Far left, tight group */}
+        <div className="flex gap-1">
+          <div className="w-20">
+            <Label htmlFor="systolic" className="text-[10px] text-muted-foreground">Sys</Label>
             <Input
               id="systolic"
               type="number"
               value={formData.bloodPressureSystolic}
               onChange={(e) => setFormData({ ...formData, bloodPressureSystolic: Number(e.target.value) })}
-              className="h-8 text-sm"
+              className="h-8 text-xs"
               required
             />
           </div>
-          <div>
-            <Label htmlFor="diastolic" className="text-xs">Diastolic</Label>
+          <div className="w-20">
+            <Label htmlFor="diastolic" className="text-[10px] text-muted-foreground">Dia</Label>
             <Input
               id="diastolic"
               type="number"
               value={formData.bloodPressureDiastolic}
               onChange={(e) => setFormData({ ...formData, bloodPressureDiastolic: Number(e.target.value) })}
-              className="h-8 text-sm"
+              className="h-8 text-xs"
               required
             />
           </div>
         </div>
-      )}
 
-      {vitalType === 'hr' && (
-        <div>
-          <Label htmlFor="heartRate" className="text-xs">Heart Rate (bpm)</Label>
+        {/* Heart Rate */}
+        <div className="w-24">
+          <Label htmlFor="heartRate" className="text-[10px] text-muted-foreground">HR (bpm)</Label>
           <Input
             id="heartRate"
             type="number"
             value={formData.heartRate}
             onChange={(e) => setFormData({ ...formData, heartRate: Number(e.target.value) })}
-            className="h-8 text-sm"
+            className="h-8 text-xs"
             required
           />
         </div>
-      )}
 
-      {vitalType === 'temp' && (
-        <div>
-          <Label htmlFor="temperature" className="text-xs">Temperature (°C)</Label>
+        {/* Temperature */}
+        <div className="w-24">
+          <Label htmlFor="temperature" className="text-[10px] text-muted-foreground">Temp (°C)</Label>
           <Input
             id="temperature"
             type="number"
             step="0.1"
             value={formData.temperature}
             onChange={(e) => setFormData({ ...formData, temperature: Number(e.target.value) })}
-            className="h-8 text-sm"
+            className="h-8 text-xs"
             required
           />
         </div>
-      )}
 
-      {vitalType === 'o2' && (
-        <div>
-          <Label htmlFor="oxygen" className="text-xs">O₂ Saturation (%)</Label>
+        {/* O2 Saturation */}
+        <div className="w-24">
+          <Label htmlFor="oxygen" className="text-[10px] text-muted-foreground">O₂ (%)</Label>
           <Input
             id="oxygen"
             type="number"
             value={formData.oxygenSaturation}
             onChange={(e) => setFormData({ ...formData, oxygenSaturation: Number(e.target.value) })}
-            className="h-8 text-sm"
+            className="h-8 text-xs"
             required
           />
         </div>
-      )}
 
-      {vitalType === 'glucose' && (
-        <div>
-          <Label htmlFor="glucose" className="text-xs">Blood Glucose (mg/dL)</Label>
+        {/* Blood Glucose */}
+        <div className="w-24">
+          <Label htmlFor="glucose" className="text-[10px] text-muted-foreground">Glucose (mg/dL)</Label>
           <Input
             id="glucose"
             type="number"
             value={formData.bloodGlucose}
             onChange={(e) => setFormData({ ...formData, bloodGlucose: Number(e.target.value) })}
-            className="h-8 text-sm"
+            className="h-8 text-xs"
             required
           />
         </div>
-      )}
+      </div>
 
-      <Button type="submit" size="sm" className="w-full">
-        Save Reading
-      </Button>
+      {/* Submit button - Below, aligned right */}
+      <div className="flex justify-end pt-2">
+        <Button type="submit" size="sm" className="px-6">
+          Save Reading
+        </Button>
+      </div>
     </form>
   );
 });

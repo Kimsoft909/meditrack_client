@@ -222,17 +222,13 @@ export const Layout = () => {
               {/* Profile */}
               <Popover open={profileModalOpen} onOpenChange={setProfileModalOpen}>
                 <PopoverTrigger asChild>
-                  <button className="flex items-center gap-2 pl-3 border-l border-border hover:bg-accent/50 rounded-lg transition-colors p-1.5 -m-1.5">
+                  <button className="hover:bg-accent/50 rounded-lg transition-colors p-1.5 -m-1.5">
                     <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all">
-                      <AvatarImage src="/placeholder.svg" />
+                      <AvatarImage src="/placeholder.svg" alt="Profile" />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-xs font-semibold">
                         DS
                       </AvatarFallback>
                     </Avatar>
-                    <div className="hidden sm:block text-left">
-                      <p className="text-xs font-medium">Dr. Sarah Smith</p>
-                      <p className="text-[10px] text-muted-foreground">Cardiologist</p>
-                    </div>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent

@@ -111,20 +111,30 @@ export const CriticalAlertsList = memo(({ patients }: CriticalAlertsListProps) =
       </CardContent>
 
       <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Schedule Appointment</DialogTitle>
             <DialogDescription>
               Select a date for follow-up with {selectedPatient?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-center py-4">
-            <Calendar 
-              mode="single" 
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              disabled={(date) => date < new Date()}
-            />
+          <div className="relative flex justify-center py-4">
+            {/* Coming Soon Badge */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+              <div className="coming-soon-badge px-4 py-1.5 rounded-full text-white text-xs font-semibold shadow-lg">
+                Coming Soon
+              </div>
+            </div>
+            {/* Enhanced Calendar Container */}
+            <div className="relative border-2 border-primary/20 rounded-xl p-4 bg-gradient-to-br from-card to-muted/30 shadow-xl">
+              <Calendar 
+                mode="single" 
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                disabled={(date) => date < new Date()}
+                className="rounded-lg"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCalendarOpen(false)}>

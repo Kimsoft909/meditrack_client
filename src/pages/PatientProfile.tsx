@@ -148,7 +148,7 @@ const PatientProfile = () => {
             {/* Vitals Tab */}
             <TabsContent value="vitals" className="space-y-4 mt-4">
               {/* Add Vital Reading */}
-              <AddVitalReadingForm patientId={patient.id} vitalType="bp" onSuccess={handleUpdate} />
+              <AddVitalReadingForm patientId={patient.id} onSuccess={handleUpdate} />
 
               {/* Vital Signs Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
