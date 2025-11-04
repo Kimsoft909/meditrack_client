@@ -4,25 +4,45 @@ import { memo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Visit } from '@/types/patient';
-import { ChevronDown, ChevronRight, Calendar, User, FileText } from 'lucide-react';
+import { Visit, Patient } from '@/types/patient';
+import { ChevronDown, ChevronRight, Calendar, User, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import { AddVisitDialog } from './AddVisitDialog';
+import { exportVisitHistoryPDF } from '@/utils/pdfExport';
+import { toast } from 'sonner';
 
 interface VisitHistoryTableProps {
+  patientId: string;
+  patient: Patient;
   visits: Visit[];
+  onUpdate?: () => void;
 }
 
-export const VisitHistoryTable = memo(({ visits }: VisitHistoryTableProps) => {
+export const VisitHistoryTable = memo(({ patientId, patient, visits, onUpdate }: VisitHistoryTableProps) => {
   const [expandedVisit, setExpandedVisit] = useState<string | null>(null);
 
-  const getVisitTypeBadge = (reason: string) => {
-    if (reason.toLowerCase().includes('routine')) {
+  const handleExportPDF = () => {
+    try {
+      exportVisitHistoryPDF(patient, visits);
+      toast.success('Visit history exported to PDF');
+    } catch (error) {
+      toast.error('Failed to export PDF');
+      console.error(error);
+    }
+  };
+
+  const getVisitTypeBadge = (visit: Visit) => {
+    const visitType = visit.visit_type || visit.reason;
+    if (!visitType) return <Badge variant="outline">Consultation</Badge>;
+    
+    const lowerType = visitType.toLowerCase();
+    if (lowerType.includes('routine')) {
       return <Badge variant="outline" className="status-stable">Routine</Badge>;
     }
-    if (reason.toLowerCase().includes('emergency') || reason.toLowerCase().includes('acute')) {
+    if (lowerType.includes('emergency') || lowerType.includes('acute')) {
       return <Badge variant="outline" className="status-critical">Emergency</Badge>;
     }
-    if (reason.toLowerCase().includes('follow')) {
+    if (lowerType.includes('follow')) {
       return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Follow-up</Badge>;
     }
     return <Badge variant="outline">Consultation</Badge>;
@@ -36,7 +56,16 @@ export const VisitHistoryTable = memo(({ visits }: VisitHistoryTableProps) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Visit History</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Visit History</h3>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleExportPDF} className="gap-2">
+            <Download className="h-3 w-3" />
+            Export Report
+          </Button>
+          <AddVisitDialog patientId={patientId} onSuccess={onUpdate} />
+        </div>
+      </div>
 
       <div className="border rounded-lg overflow-hidden">
         <Table>
@@ -80,13 +109,13 @@ export const VisitHistoryTable = memo(({ visits }: VisitHistoryTableProps) => {
                         {format(visit.date, 'MMM dd, yyyy')}
                       </div>
                     </TableCell>
-                    <TableCell>{getVisitTypeBadge(visit.reason)}</TableCell>
-                    <TableCell className="font-medium">{visit.reason}</TableCell>
+                    <TableCell>{getVisitTypeBadge(visit)}</TableCell>
+                    <TableCell className="font-medium">{visit.chief_complaint || visit.reason}</TableCell>
                     <TableCell className="text-sm">{visit.diagnosis}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        {visit.doctorName}
+                        {visit.provider || visit.doctorName}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -112,13 +141,20 @@ export const VisitHistoryTable = memo(({ visits }: VisitHistoryTableProps) => {
                             </div>
                             <div>
                               <span className="text-xs text-muted-foreground">Chief Complaint</span>
-                              <p className="text-sm font-medium">{visit.reason}</p>
+                              <p className="text-sm font-medium">{visit.chief_complaint || visit.reason}</p>
                             </div>
                             <div>
                               <span className="text-xs text-muted-foreground">Attending Physician</span>
-                              <p className="text-sm font-medium">{visit.doctorName}</p>
+                              <p className="text-sm font-medium">{visit.provider || visit.doctorName}</p>
                             </div>
                           </div>
+                          
+                          {visit.treatment && (
+                            <div className="pt-2 border-t">
+                              <span className="text-xs text-muted-foreground">Treatment Plan</span>
+                              <p className="text-sm font-medium mt-1">{visit.treatment}</p>
+                            </div>
+                          )}
 
                           <div className="pt-2 border-t">
                             <span className="text-xs text-muted-foreground">Diagnosis & Treatment Plan</span>

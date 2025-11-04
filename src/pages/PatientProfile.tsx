@@ -200,13 +200,19 @@ const PatientProfile = () => {
               <MedicationTable 
                 medications={patient.medications} 
                 patientId={patient.id}
+                patient={patient}
                 onUpdate={handleUpdate}
               />
             </TabsContent>
 
             {/* History Tab */}
             <TabsContent value="history" className="space-y-4 mt-4">
-              <VisitHistoryTable visits={patient.visits} />
+              <VisitHistoryTable 
+                visits={patient.visits} 
+                patientId={patient.id}
+                patient={patient}
+                onUpdate={handleUpdate}
+              />
             </TabsContent>
           </Tabs>
         </div>

@@ -29,21 +29,32 @@ export interface Medication {
   name: string;
   dosage: string;
   frequency: string;
+  route?: string; // oral, IV, topical, etc.
   startDate: Date;
   endDate?: Date;
   prescribedBy: string;
   prescriptionNumber: string;
   instructions: string;
   refillsRemaining: number;
+  indication?: string; // reason for medication
+  notes?: string;
+  drug_id?: string; // backend reference
+  is_active?: boolean; // backend tracking
 }
 
 export interface Visit {
   id: string;
   date: Date;
-  reason: string;
+  visit_type: 'routine' | 'emergency' | 'follow-up'; // backend alignment
+  department?: string;
+  provider?: string; // doctor/provider name
+  chief_complaint?: string; // reason for visit
   diagnosis: string;
+  treatment?: string;
   notes: string;
-  doctorName: string;
+  // Legacy fields for backward compatibility
+  reason?: string;
+  doctorName?: string;
 }
 
 export interface AIAnalysis {

@@ -61,6 +61,8 @@ const generateVitals = (count: number, age: number, conditions: string[]): Vital
 // Generate visit history
 const generateVisits = (count: number): Visit[] => {
   const reasons = ['Routine checkup', 'Follow-up visit', 'Acute complaint', 'Chronic disease management', 'Medication review', 'Lab results review'];
+  const visitTypes: Array<'routine' | 'emergency' | 'follow-up'> = ['routine', 'routine', 'follow-up', 'emergency', 'routine', 'follow-up'];
+  const departments = ['General Medicine', 'Cardiology', 'Emergency', 'Internal Medicine'];
   const visits: Visit[] = [];
   const now = new Date();
   
@@ -68,12 +70,20 @@ const generateVisits = (count: number): Visit[] => {
     const date = new Date(now);
     date.setMonth(date.getMonth() - i * 2);
     
+    const reason = reasons[Math.floor(Math.random() * reasons.length)];
+    
     visits.push({
       id: `visit-${date.getTime()}-${i}`,
       date,
-      reason: reasons[Math.floor(Math.random() * reasons.length)],
+      visit_type: visitTypes[Math.floor(Math.random() * visitTypes.length)],
+      department: departments[Math.floor(Math.random() * departments.length)],
+      provider: doctorNames[Math.floor(Math.random() * doctorNames.length)],
+      chief_complaint: reason,
       diagnosis: 'Stable condition, continue current treatment',
+      treatment: 'Continue current medications, follow-up in 2 months',
       notes: 'Patient reports feeling well. Vital signs within acceptable range. Continue current medications.',
+      // Legacy fields for backward compatibility
+      reason,
       doctorName: doctorNames[Math.floor(Math.random() * doctorNames.length)],
     });
   }

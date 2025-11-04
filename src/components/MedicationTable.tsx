@@ -7,22 +7,28 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Medication } from '@/types/patient';
-import { MoreVertical, Edit, Eye, RefreshCw, StopCircle, Plus } from 'lucide-react';
+import { Medication, Patient } from '@/types/patient';
+import { MoreVertical, Edit, Eye, RefreshCw, StopCircle, Plus, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { patientService } from '@/services/patientService';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { EditMedicationDialog } from './EditMedicationDialog';
+import { RefillMedicationDialog } from './RefillMedicationDialog';
+import { exportPrescriptionsPDF } from '@/utils/pdfExport';
 
 interface MedicationTableProps {
   patientId: string;
+  patient: Patient;
   medications: Medication[];
   onUpdate?: () => void;
 }
 
-export const MedicationTable = memo(({ patientId, medications, onUpdate }: MedicationTableProps) => {
+export const MedicationTable = memo(({ patientId, patient, medications, onUpdate }: MedicationTableProps) => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [refillDialogOpen, setRefillDialogOpen] = useState(false);
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const [newMed, setNewMed] = useState({
     name: '',
@@ -34,13 +40,23 @@ export const MedicationTable = memo(({ patientId, medications, onUpdate }: Medic
     refillsRemaining: 0,
   });
 
-  const handleRefill = (med: Medication) => {
-    const result = patientService.refillMedication(patientId, med.id);
-    if (result) {
-      toast({ title: 'Refill processed', description: `${med.name} refill recorded` });
-      onUpdate?.();
-    } else {
-      toast({ title: 'Error', description: 'No refills remaining', variant: 'destructive' });
+  const handleRefillClick = (med: Medication) => {
+    setSelectedMed(med);
+    setRefillDialogOpen(true);
+  };
+
+  const handleEditClick = (med: Medication) => {
+    setSelectedMed(med);
+    setEditDialogOpen(true);
+  };
+
+  const handleExportPDF = () => {
+    try {
+      exportPrescriptionsPDF(patient, medications);
+      toast({ title: 'Success', description: 'Prescriptions exported to PDF' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to export PDF', variant: 'destructive' });
+      console.error(error);
     }
   };
 
@@ -82,10 +98,16 @@ export const MedicationTable = memo(({ patientId, medications, onUpdate }: Medic
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Current Medications</h3>
-        <Button size="sm" onClick={() => setAddDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Medication
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleExportPDF} className="gap-2">
+            <Download className="h-3 w-3" />
+            Export Prescriptions
+          </Button>
+          <Button size="sm" onClick={() => setAddDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Medication
+          </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg overflow-hidden">
@@ -137,7 +159,11 @@ export const MedicationTable = memo(({ patientId, medications, onUpdate }: Medic
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRefill(med)} disabled={med.refillsRemaining <= 0}>
+                        <DropdownMenuItem onClick={() => handleEditClick(med)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRefillClick(med)} disabled={med.refillsRemaining <= 0}>
                           <RefreshCw className="h-4 w-4 mr-2" />
                           Refill
                         </DropdownMenuItem>
@@ -316,6 +342,22 @@ export const MedicationTable = memo(({ patientId, medications, onUpdate }: Medic
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Medication Dialog */}
+      <EditMedicationDialog
+        medication={selectedMed}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={onUpdate}
+      />
+
+      {/* Refill Medication Dialog */}
+      <RefillMedicationDialog
+        medication={selectedMed}
+        open={refillDialogOpen}
+        onOpenChange={setRefillDialogOpen}
+        onSuccess={onUpdate}
+      />
     </div>
   );
 });
