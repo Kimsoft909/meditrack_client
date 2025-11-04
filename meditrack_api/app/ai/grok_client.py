@@ -22,6 +22,38 @@ class GrokClient:
         self.max_retries = 3
         self.timeout = settings.GROK_TIMEOUT_SECONDS
     
+    def _parse_non_streaming_response(self, data: dict) -> str:
+        """
+        Parse API response with robust error handling.
+        Supports multiple response formats from different API providers.
+        """
+        logger.info(f"Parsing API response with keys: {list(data.keys())}")
+        
+        # Try OpenAI-compatible format (standard)
+        try:
+            content = data["choices"][0]["message"]["content"]
+            logger.info(f"✓ Successfully parsed OpenAI format, content length: {len(content)}")
+            return content
+        except (KeyError, IndexError, TypeError) as e:
+            logger.warning(f"OpenAI format parsing failed: {type(e).__name__}: {e}")
+        
+        # Try alternative formats
+        alternative_formats = [
+            ("generated_text", "HuggingFace"),
+            ("text", "Direct text"),
+            ("response", "Generic response"),
+            ("content", "Direct content")
+        ]
+        
+        for field, format_name in alternative_formats:
+            if field in data:
+                logger.info(f"✓ Using {format_name} format: field '{field}'")
+                return str(data[field])
+        
+        # Log full structure for debugging
+        logger.error(f"❌ Unable to parse response. Full structure:\n{json.dumps(data, indent=2)}")
+        raise Exception(f"Unexpected API response format. Available keys: {list(data.keys())}")
+    
     async def generate_completion(
         self,
         prompt: str,
@@ -70,8 +102,12 @@ class GrokClient:
                     response.raise_for_status()
                     data = response.json()
                     
-                    # OpenAI-compatible format
-                    return data["choices"][0]["message"]["content"]
+                    # Log successful API call
+                    logger.info(f"API returned status {response.status_code}")
+                    logger.debug(f"Full API response: {json.dumps(data, indent=2)}")
+                    
+                    # Parse response using robust method
+                    return self._parse_non_streaming_response(data)
                 
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code == 403:
@@ -143,13 +179,27 @@ class GrokClient:
                             
                             try:
                                 chunk_json = json.loads(data_str)
-                                delta = chunk_json.get("choices", [{}])[0].get("delta", {})
+                                
+                                # Safely extract content with multiple fallbacks
+                                choices = chunk_json.get("choices", [])
+                                
+                                if not choices:
+                                    # Some SSE events don't have choices (metadata events)
+                                    logger.debug(f"Skipping chunk without choices: {list(chunk_json.keys())}")
+                                    continue
+                                
+                                delta = choices[0].get("delta", {})
                                 content = delta.get("content", "")
                                 
                                 if content:
                                     yield content
                             
-                            except json.JSONDecodeError:
+                            except json.JSONDecodeError as e:
+                                logger.debug(f"JSON decode error (partial chunk): {e}")
+                                continue
+                            except (KeyError, IndexError, TypeError) as e:
+                                logger.warning(f"Unexpected chunk structure: {type(e).__name__}: {e}")
+                                logger.debug(f"Problematic chunk: {data_str[:200]}")
                                 continue
             
             except Exception as e:

@@ -239,10 +239,26 @@ Risk Level: {risk_level}
 Focus on clinical significance and actionable insights. Use professional medical terminology."""
         
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f"Generating AI summary for patient {patient.id}")
             summary = await self.grok.generate_completion(prompt, max_tokens=150)
+            
+            # Check if we got the fallback message from GrokClient
+            if summary == "Unable to generate response":
+                logger.error("❌ Grok API returned fallback response - API call failed")
+                raise Exception("AI API returned fallback response")
+            
+            logger.info(f"✓ Successfully generated summary: {summary[:100]}...")
             return summary.strip()
         except Exception as e:
-            return f"Patient {patient.first_name} {patient.last_name} requires continued monitoring. {vitals_narrative} {meds_narrative}"
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"❌ Error generating executive summary: {type(e).__name__}: {str(e)}")
+            fallback = f"Patient {patient.first_name} {patient.last_name} requires continued monitoring. {vitals_narrative} {meds_narrative}"
+            logger.warning(f"⚠️ Using fallback summary: {fallback}")
+            return fallback
     
     def _calculate_health_score(
         self,
