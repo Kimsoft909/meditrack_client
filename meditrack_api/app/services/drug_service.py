@@ -28,17 +28,20 @@ class DrugService:
         return [DrugSearchResponse.model_validate(d) for d in drugs]
     
     async def get_fda_info(self, drug_id: str) -> FDADrugInfoResponse:
-        """Fetch drug information from FDA OpenFDA API using repository."""
+        """Fetch drug information from FDA OpenFDA API using generic name."""
         drug = await self.drug_repo.get_by_id_or_404(drug_id)
         
-        # Try FDA API call
+        # Try FDA API call using generic name (more reliable than brand names)
         try:
-            if drug.brand_names:
+            if drug.generic_name:
                 async with httpx.AsyncClient(timeout=10.0) as client:
+                    # Use generic_name for FDA search (case-insensitive, exact match)
+                    search_query = f'openfda.generic_name:"{drug.generic_name.lower()}"'
+                    
                     response = await client.get(
                         f"{settings.FDA_API_BASE_URL}/drug/label.json",
                         params={
-                            "search": f"openfda.brand_name:{drug.brand_names[0]}",
+                            "search": search_query,
                             "limit": 1
                         },
                         headers={"Authorization": f"Bearer {settings.FDA_API_KEY}"} if settings.FDA_API_KEY else {}
@@ -48,20 +51,28 @@ class DrugService:
                         fda_data = response.json()
                         if fda_data.get("results"):
                             label = fda_data["results"][0]
+                            
+                            # Extract FDA label URL with SPL set ID
+                            fda_label_url = "https://www.accessdata.fda.gov/scripts/cder/daf/"
+                            if label.get("openfda", {}).get("spl_set_id"):
+                                spl_id = label["openfda"]["spl_set_id"][0]
+                                fda_label_url = f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={spl_id}"
+                            
                             return FDADrugInfoResponse(
                                 drug_name=drug.name,
-                                active_ingredient=", ".join(label.get("active_ingredient", ["Unknown"])),
-                                indication=", ".join(label.get("indications_and_usage", ["No data"])),
-                                dosage=", ".join(label.get("dosage_and_administration", ["No data"])),
-                                warnings=label.get("warnings", []),
-                                adverse_reactions=label.get("adverse_reactions", [])[:5],
+                                active_ingredient=", ".join(label.get("active_ingredient", [drug.generic_name])),
+                                indication="\n".join(label.get("indications_and_usage", [drug.indication or "No data"])),
+                                dosage="\n".join(label.get("dosage_and_administration", ["Consult prescribing information"])),
+                                warnings=label.get("warnings", []) or label.get("boxed_warning", []),
+                                adverse_reactions=label.get("adverse_reactions", [])[:10],
                                 contraindications=label.get("contraindications", []),
-                                fda_label=label.get("openfda", {}).get("spl_set_id", [""])[0]
+                                fda_label=fda_label_url
                             )
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error but don't fail - fallback to DB info
+            print(f"FDA API error for {drug.name} ({drug.generic_name}): {e}")
         
-        # Fallback to database info
+        # Fallback to database info (always works)
         return FDADrugInfoResponse(
             drug_name=drug.name,
             active_ingredient=drug.generic_name or "Unknown",

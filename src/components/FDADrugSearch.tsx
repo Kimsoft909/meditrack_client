@@ -1,9 +1,9 @@
-// FDA drug information lookup component
-// Provides Google-like search for drug information from FDA database
+// FDA drug information lookup component with autocomplete
+// Uses fuzzy search dropdown, then fetches full FDA details on selection
 
-import { useState } from 'react';
-import { Search, ExternalLink, AlertTriangle, Loader2, Info } from 'lucide-react';
-import { FDADrugInfo } from '@/types/drug';
+import { useState, useEffect } from 'react';
+import { Search, ExternalLink, AlertTriangle, Loader2, Info, Check, ChevronsUpDown } from 'lucide-react';
+import { FDADrugInfo, Drug } from '@/types/drug';
 import { drugInteractionService } from '@/services/drugInteractionService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Accordion,
   AccordionContent,
@@ -18,67 +20,121 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export function FDADrugSearch() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Drug[]>([]);
+  const [selectedDrug, setSelectedDrug] = useState<Drug | null>(null);
   const [drugInfo, setDrugInfo] = useState<FDADrugInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const debouncedQuery = useDebounce(searchQuery, 500);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
-  // Perform FDA search
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || searchQuery.length < 3) return;
+  // Fuzzy search drugs as user types (mock data for now)
+  useEffect(() => {
+    if (debouncedQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
 
+    // Use existing mock searchDrugs method
+    const results = drugInteractionService.searchDrugs(debouncedQuery);
+    setSearchResults(results);
+  }, [debouncedQuery]);
+
+  // Fetch FDA info when drug is selected (mock data for now)
+  const handleDrugSelect = async (drug: Drug) => {
+    setSelectedDrug(drug);
+    setSearchQuery('');
+    setOpen(false);
+    setSearchResults([]);
     setIsLoading(true);
-    setHasSearched(true);
+    setDrugInfo(null);
 
     try {
-      const info = await drugInteractionService.searchFDADrugInfo(searchQuery);
+      // Mock API delay for realism
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Use existing mock searchFDADrugInfo method
+      const info = await drugInteractionService.searchFDADrugInfo(drug.name);
       setDrugInfo(info);
     } catch (error) {
-      console.error('FDA search error:', error);
+      console.error('Error fetching FDA drug info:', error);
       setDrugInfo(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Trigger search on Enter key
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {/* Search Input */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search FDA drug database (e.g., Warfarin, Metformin)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="pl-10"
-            aria-label="Search FDA drug information"
-          />
-        </div>
-        <Button
-          onClick={handleSearch}
-          disabled={isLoading || searchQuery.length < 3}
-          aria-label="Search"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
-          )}
-        </Button>
+      {/* Autocomplete Search Interface */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Search Drug Database</label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between h-auto min-h-[40px]"
+            >
+              <span className="truncate">
+                {selectedDrug ? (
+                  <span className="flex flex-col items-start">
+                    <span className="font-medium">{selectedDrug.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {selectedDrug.genericName}
+                    </span>
+                  </span>
+                ) : (
+                  "Type drug name (e.g., Warfarin, Metformin)..."
+                )}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command shouldFilter={false}>
+              <CommandInput 
+                placeholder="Search drugs..." 
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {searchQuery.length < 2 ? 'Type at least 2 characters...' : 'No drugs found.'}
+                </CommandEmpty>
+                {searchResults.length > 0 && (
+                  <CommandGroup heading="Available Drugs">
+                    {searchResults.map((drug) => (
+                      <CommandItem
+                        key={drug.id}
+                        value={drug.name}
+                        onSelect={() => handleDrugSelect(drug)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedDrug?.id === drug.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{drug.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {drug.genericName} • {drug.drugClass?.[0] || 'N/A'}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Loading State */}
@@ -225,15 +281,15 @@ export function FDADrugSearch() {
       )}
 
       {/* No Results State */}
-      {!isLoading && hasSearched && !drugInfo && (
+      {!isLoading && selectedDrug && !drugInfo && (
         <Card>
           <CardContent className="py-8 text-center">
             <Info className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">
-              No FDA information found for "{searchQuery}"
+              No FDA information found for "{selectedDrug.name}"
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Try searching by generic name or check spelling
+              Drug data is currently unavailable
             </p>
           </CardContent>
         </Card>
