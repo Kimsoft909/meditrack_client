@@ -18,7 +18,12 @@ export const API_ENDPOINTS = {
   medications: `${API_BASE_URL}/api/v1/medications`,
   aiAnalysis: `${API_BASE_URL}/api/v1/ai-analysis`,
   drugChecker: `${API_BASE_URL}/api/v1/drugs`,
-  chat: `${API_BASE_URL}/api/v1/chat`,
+  chat: {
+    send: `${API_BASE_URL}/api/v1/chat/send`,
+    history: `${API_BASE_URL}/api/v1/chat/history`,
+    deleteConversation: (conversationId: string) => 
+      `${API_BASE_URL}/api/v1/chat/history/${conversationId}`,
+  },
   dashboard: `${API_BASE_URL}/api/v1/dashboard`,
   settings: `${API_BASE_URL}/api/v1/settings`,
 };

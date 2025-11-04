@@ -1,7 +1,8 @@
-// AI Chat page with simulated ChatGPT-style interactions
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Sparkles, Loader2, History, Trash2 } from 'lucide-react';
+import { chatService } from '@/services/chatService';
+import { logger } from '@/utils/logger';
+import type { ChatMessage } from '@/types/chat';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -26,35 +27,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-const SIMULATED_RESPONSES = [
-  "Based on the patient's symptoms and medical history, I recommend conducting a comprehensive cardiovascular assessment. The elevated blood pressure readings combined with the reported chest discomfort warrant immediate attention.",
-  "Drug interactions between ACE inhibitors and NSAIDs can lead to reduced antihypertensive efficacy and potential renal complications. I'd suggest monitoring kidney function closely if this combination is necessary.",
-  "The lab results indicate mild anemia. Consider investigating potential causes such as iron deficiency, vitamin B12 deficiency, or chronic disease. A complete iron panel would be beneficial.",
-  "For patients with hypertension and diabetes, the combination of an ACE inhibitor or ARB with metformin is generally well-tolerated and provides cardiovascular protection.",
-  "Post-operative care should include regular vital monitoring, pain management assessment, and early mobilization to prevent complications such as deep vein thrombosis.",
-  "The symptoms you've described could be indicative of several conditions. I recommend a differential diagnosis approach, starting with the most common and life-threatening possibilities.",
-  "Medication adherence is crucial for chronic disease management. Consider implementing reminder systems and patient education programs to improve compliance rates.",
-];
-
 const AIChat = React.memo(() => {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your AI medical assistant. I can help answer questions about patient care, drug interactions, treatment protocols, and general medical inquiries. How can I assist you today?',
-      timestamp: new Date(),
-    },
-  ]);
+  const [conversationId, setConversationId] = useState<string>(crypto.randomUUID());
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,71 +42,113 @@ const AIChat = React.memo(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Load chat history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const history = await chatService.getHistory({ 
+          conversation_id: conversationId,
+          limit: 50 
+        });
+        
+        if (history.length === 0) {
+          // Add welcome message if no history
+          setMessages([{
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: 'Hello! I\'m your AI medical assistant. I can help answer questions about patient care, drug interactions, treatment protocols, and general medical inquiries. How can I assist you today?',
+            created_at: new Date().toISOString(),
+          }]);
+        } else {
+          setMessages(history);
+        }
+      } catch (error) {
+        logger.error('Failed to load chat history', error);
+        // Add welcome message on error
+        setMessages([{
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Hello! I\'m your AI medical assistant. I can help answer questions about patient care, drug interactions, treatment protocols, and general medical inquiries. How can I assist you today?',
+          created_at: new Date().toISOString(),
+        }]);
+      }
+    };
+    
+    loadHistory();
+  }, [conversationId]);
+
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, scrollToBottom]);
-
-  const simulateAIResponse = useCallback((userMessage: string): string => {
-    // Simple keyword-based response selection
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('drug') || lowerMessage.includes('medication') || lowerMessage.includes('interaction')) {
-      return SIMULATED_RESPONSES[1];
-    }
-    if (lowerMessage.includes('lab') || lowerMessage.includes('test') || lowerMessage.includes('result')) {
-      return SIMULATED_RESPONSES[2];
-    }
-    if (lowerMessage.includes('blood pressure') || lowerMessage.includes('hypertension') || lowerMessage.includes('bp')) {
-      return SIMULATED_RESPONSES[0];
-    }
-    if (lowerMessage.includes('diabetes') || lowerMessage.includes('glucose')) {
-      return SIMULATED_RESPONSES[3];
-    }
-    if (lowerMessage.includes('post') || lowerMessage.includes('surgery') || lowerMessage.includes('operative')) {
-      return SIMULATED_RESPONSES[4];
-    }
-    if (lowerMessage.includes('symptom') || lowerMessage.includes('diagnosis')) {
-      return SIMULATED_RESPONSES[5];
-    }
-    if (lowerMessage.includes('adherence') || lowerMessage.includes('compliance')) {
-      return SIMULATED_RESPONSES[6];
-    }
-    
-    // Random response for other queries
-    return SIMULATED_RESPONSES[Math.floor(Math.random() * SIMULATED_RESPONSES.length)];
-  }, []);
+  }, [messages, isStreaming, scrollToBottom]);
 
   const handleSend = useCallback(async () => {
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || isStreaming) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
       role: 'user',
       content: input.trim(),
-      timestamp: new Date(),
+      created_at: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsTyping(true);
+    setIsStreaming(true);
 
-    // Simulate AI thinking time (1-2 seconds)
-    const thinkingTime = 1000 + Math.random() * 1000;
-    await new Promise(resolve => setTimeout(resolve, thinkingTime));
+    let assistantContent = '';
+    const assistantId = crypto.randomUUID();
 
-    const responseContent = simulateAIResponse(userMessage.content);
-
-    // Simulate typing effect
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: responseContent,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, aiMessage]);
-    setIsTyping(false);
-  }, [input, isTyping, simulateAIResponse]);
+    try {
+      await chatService.streamMessage(
+        { message: userMessage.content, conversation_id: conversationId },
+        
+        // onToken
+        (token: string) => {
+          assistantContent += token;
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'assistant' && lastMsg.id === assistantId) {
+              // Update existing assistant message
+              return prev.map(m => 
+                m.id === assistantId 
+                  ? { ...m, content: assistantContent }
+                  : m
+              );
+            } else {
+              // Add new assistant message
+              return [...prev, {
+                id: assistantId,
+                role: 'assistant',
+                content: assistantContent,
+                created_at: new Date().toISOString(),
+              }];
+            }
+          });
+        },
+        
+        // onDone
+        (newConversationId: string) => {
+          if (newConversationId) {
+            setConversationId(newConversationId);
+          }
+          setIsStreaming(false);
+        },
+        
+        // onError
+        (error: string) => {
+          toast({
+            title: 'Error',
+            description: error,
+            variant: 'destructive',
+          });
+          setIsStreaming(false);
+        }
+      );
+    } catch (error: any) {
+      logger.error('Failed to send message', error);
+      setIsStreaming(false);
+    }
+  }, [input, isStreaming, conversationId, toast]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -137,22 +157,32 @@ const AIChat = React.memo(() => {
     }
   }, [handleSend]);
 
-  const handleClearHistory = useCallback(() => {
-    setMessages([
-      {
-        id: '1',
+  const handleClearHistory = useCallback(async () => {
+    try {
+      await chatService.deleteConversation(conversationId);
+      const newConversationId = crypto.randomUUID();
+      setConversationId(newConversationId);
+      setMessages([{
+        id: crypto.randomUUID(),
         role: 'assistant',
         content: 'Hello! I\'m your AI medical assistant. I can help answer questions about patient care, drug interactions, treatment protocols, and general medical inquiries. How can I assist you today?',
-        timestamp: new Date(),
-      },
-    ]);
-    setShowDeleteDialog(false);
-    setShowHistory(false);
-    toast({
-      title: 'Conversation cleared',
-      description: 'Your chat history has been deleted.',
-    });
-  }, [toast]);
+        created_at: new Date().toISOString(),
+      }]);
+      setShowDeleteDialog(false);
+      setShowHistory(false);
+      toast({
+        title: 'Conversation cleared',
+        description: 'Your chat history has been deleted.',
+      });
+    } catch (error) {
+      logger.error('Failed to clear history', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear conversation',
+        variant: 'destructive',
+      });
+    }
+  }, [conversationId, toast]);
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-background via-background to-primary/5 rounded-2xl border border-border/40 shadow-xl overflow-hidden">
@@ -195,7 +225,7 @@ const AIChat = React.memo(() => {
                             {message.role === 'user' ? 'You' : 'AI Assistant'}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            {message.timestamp.toLocaleString()}
+                            {new Date(message.created_at).toLocaleString()}
                           </span>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -247,7 +277,7 @@ const AIChat = React.memo(() => {
                   {message.content}
                 </p>
                 <p className={`text-[10px] mt-2 ${message.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
 
@@ -261,7 +291,7 @@ const AIChat = React.memo(() => {
             </div>
           ))}
 
-          {isTyping && (
+          {isStreaming && (
             <div className="flex gap-4 justify-start">
               <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
                 <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-xs">
@@ -296,7 +326,7 @@ const AIChat = React.memo(() => {
           </div>
           <Button
             onClick={handleSend}
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isStreaming}
             size="icon"
             className="h-[52px] w-[52px] rounded-xl bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
           >
@@ -304,7 +334,7 @@ const AIChat = React.memo(() => {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground/70 text-center mt-3 max-w-4xl mx-auto">
-          This is a simulated AI assistant for demonstration purposes. Responses are pre-programmed and not actual medical advice.
+          AI-powered medical assistant. Responses are generated in real-time using Grok AI.
         </p>
       </div>
 
