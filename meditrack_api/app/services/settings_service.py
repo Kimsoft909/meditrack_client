@@ -34,13 +34,11 @@ class SettingsService:
                 id=str(uuid.uuid4()),
                 user_id=user_id,
                 theme="system",
-                notifications_enabled=True,
                 email_notifications=True,
                 push_notifications=True,
-                vitals_alerts=True,
-                medication_reminders=True,
+                critical_alerts_only=False,
                 font_family="Inter",
-                font_size=16
+                font_size="medium"
             )
             self.db.add(settings)
             await self.db.commit()
@@ -78,9 +76,7 @@ class SettingsService:
         settings = await self.get_settings(user_id)
         
         return NotificationPreferences(
-            notifications_enabled=settings.notifications_enabled,
             email_notifications=settings.email_notifications,
             push_notifications=settings.push_notifications,
-            vitals_alerts=settings.vitals_alerts,
-            medication_reminders=settings.medication_reminders
+            critical_alerts_only=settings.critical_alerts_only
         )

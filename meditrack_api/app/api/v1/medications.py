@@ -11,7 +11,8 @@ from app.api.deps import get_current_user
 from app.schemas.medication import (
     MedicationCreate,
     MedicationUpdate,
-    MedicationResponse
+    MedicationResponse,
+    MedicationListResponse
 )
 from app.services.medication_service import MedicationService
 from app.models.user import User
@@ -32,7 +33,7 @@ async def create_medication(
     return await service.create_medication(patient_id, medication)
 
 
-@router.get("/patients/{patient_id}/medications", response_model=List[MedicationResponse])
+@router.get("/patients/{patient_id}/medications", response_model=MedicationListResponse)
 async def get_patient_medications(
     patient_id: str,
     active_only: bool = True,
