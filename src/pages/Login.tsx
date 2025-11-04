@@ -7,14 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import type { LoginFormData } from '@/types/auth';
 
 export const Login = React.memo(() => {
+  const { login, isLoading } = useAuth();
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = useCallback((field: keyof LoginFormData) => (
     e: React.ChangeEvent<HTMLInputElement>
@@ -29,11 +33,19 @@ export const Login = React.memo(() => {
     setShowPassword(prev => !prev);
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    // Auth logic will be implemented later
-    console.log('Login attempt:', formData);
-  }, [formData]);
+    setIsSubmitting(true);
+
+    try {
+      await login(formData);
+      // AuthContext handles redirect to /dashboard
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formData, login]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -98,9 +110,10 @@ export const Login = React.memo(() => {
 
             <Button
               type="submit"
+              disabled={isSubmitting || isLoading}
               className="w-full h-9 text-sm font-medium bg-gradient-to-r from-primary to-primary-hover shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all"
             >
-              Sign In
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </Button>
 
             <div className="text-center pt-4 border-t border-border/40">

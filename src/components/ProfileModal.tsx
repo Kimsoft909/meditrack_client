@@ -6,26 +6,25 @@ import { Settings, LogOut, Mail } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface ProfileModalProps {
   onClose?: () => void;
 }
 
-// Mock user data - will be replaced with real data later
-const mockUser = {
-  username: 'Dr. Sarah Smith',
-  initials: 'DS',
-  email: 'sarah.smith@meditrack.com',
-  specialty: 'Cardiologist',
-  avatar: undefined,
-};
-
 export const ProfileModal = React.memo<ProfileModalProps>(({ onClose }) => {
-  const handleLogout = useCallback(() => {
-    // Logout logic will be implemented later
-    console.log('Logout triggered');
+  const { user, logout } = useAuth();
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
     onClose?.();
-  }, [onClose]);
+  }, [logout, onClose]);
 
   return (
     <div className="w-[280px] p-0">
@@ -33,17 +32,17 @@ export const ProfileModal = React.memo<ProfileModalProps>(({ onClose }) => {
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12 border-2 border-primary/20">
-            <AvatarImage src={mockUser.avatar} />
+            <AvatarImage src={user?.avatar_url || undefined} />
             <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-sm font-semibold">
-              {mockUser.initials}
+              {user?.username?.substring(0, 2).toUpperCase() || 'DR'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-foreground truncate">
-              {mockUser.username}
+              {user?.full_name || user?.username || 'Doctor'}
             </p>
             <p className="text-[10px] text-muted-foreground truncate">
-              {mockUser.specialty}
+              {user?.specialty || 'Medical Professional'}
             </p>
           </div>
         </div>
@@ -51,7 +50,7 @@ export const ProfileModal = React.memo<ProfileModalProps>(({ onClose }) => {
         <div className="flex items-start gap-2 p-2 rounded-md bg-muted/50">
           <Mail className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
           <p className="text-[10px] text-muted-foreground break-all">
-            {mockUser.email}
+            {user?.email || 'email@example.com'}
           </p>
         </div>
       </div>

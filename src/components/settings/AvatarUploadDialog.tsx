@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Upload, X } from 'lucide-react';
+import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AvatarUploadDialogProps {
   open: boolean;
@@ -12,7 +14,9 @@ interface AvatarUploadDialogProps {
 }
 
 export const AvatarUploadDialog = React.memo<AvatarUploadDialogProps>(({ open, onOpenChange }) => {
+  const { updateUser, user } = useAuth();
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,6 +33,7 @@ export const AvatarUploadDialog = React.memo<AvatarUploadDialogProps>(({ open, o
       return;
     }
 
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       setPreview(reader.result as string);
@@ -37,21 +42,32 @@ export const AvatarUploadDialog = React.memo<AvatarUploadDialogProps>(({ open, o
   }, []);
 
   const handleUpload = useCallback(async () => {
-    if (!preview) return;
+    if (!preview || !selectedFile) return;
 
     setIsUploading(true);
     
-    // Simulated upload (integrate with Supabase storage when ready)
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success('Avatar updated successfully');
-    setPreview(null);
-    setIsUploading(false);
-    onOpenChange(false);
-  }, [preview, onOpenChange]);
+    try {
+      const response = await authService.uploadAvatar(selectedFile);
+      
+      // Update user in auth context
+      if (user) {
+        updateUser({ ...user, avatar_url: response.avatar_url });
+      }
+
+      toast.success('Avatar updated successfully');
+      setPreview(null);
+      setSelectedFile(null);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [preview, selectedFile, user, updateUser, onOpenChange]);
 
   const handleRemovePreview = useCallback(() => {
     setPreview(null);
+    setSelectedFile(null);
   }, []);
 
   return (

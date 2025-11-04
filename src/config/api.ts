@@ -1,0 +1,24 @@
+import { config } from './environment';
+
+export const API_BASE_URL = config.apiBaseUrl;
+
+export const API_ENDPOINTS = {
+  auth: {
+    login: `${API_BASE_URL}/api/v1/auth/login`,
+    signup: `${API_BASE_URL}/api/v1/auth/signup`,
+    refresh: `${API_BASE_URL}/api/v1/auth/refresh`,
+    logout: `${API_BASE_URL}/api/v1/auth/logout`,
+    profile: `${API_BASE_URL}/api/v1/auth/profile`,
+    updateProfile: `${API_BASE_URL}/api/v1/auth/profile`,
+    changePassword: `${API_BASE_URL}/api/v1/auth/change-password`,
+    uploadAvatar: `${API_BASE_URL}/api/v1/auth/avatar`,
+  },
+  patients: `${API_BASE_URL}/api/v1/patients`,
+  vitals: `${API_BASE_URL}/api/v1/vitals`,
+  medications: `${API_BASE_URL}/api/v1/medications`,
+  aiAnalysis: `${API_BASE_URL}/api/v1/ai-analysis`,
+  drugChecker: `${API_BASE_URL}/api/v1/drugs`,
+  chat: `${API_BASE_URL}/api/v1/chat`,
+  dashboard: `${API_BASE_URL}/api/v1/dashboard`,
+  settings: `${API_BASE_URL}/api/v1/settings`,
+};

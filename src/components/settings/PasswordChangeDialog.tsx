@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
+import { authService } from '@/services/authService';
 
 interface PasswordChangeDialogProps {
   open: boolean;
@@ -37,15 +38,23 @@ export const PasswordChangeDialog = React.memo<PasswordChangeDialogProps>(({ ope
 
     setIsSubmitting(true);
     
-    // Simulated password change (integrate with Supabase auth when ready)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success('Password changed successfully');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setIsSubmitting(false);
-    onOpenChange(false);
+    try {
+      await authService.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+
+      toast.success('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [currentPassword, newPassword, confirmPassword, onOpenChange]);
 
   return (

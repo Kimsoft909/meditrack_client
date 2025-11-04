@@ -40,7 +40,48 @@ export interface LoginFormData {
 export interface SignupFormData {
   username: string;
   email: string;
-  specialty: MedicalSpecialty;
+  full_name: string;
+  specialty?: string;
   password: string;
   confirmPassword: string;
+}
+
+// Backend Response Types
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: UserProfile;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  full_name: string;
+  specialty: string | null;
+  avatar_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface AuthState {
+  user: UserProfile | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface ProfileUpdateRequest {
+  full_name?: string;
+  specialty?: string;
+  email?: string;
 }

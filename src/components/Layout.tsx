@@ -5,6 +5,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ProfileModal } from '@/components/ProfileModal';
 import { NotificationsSheet } from '@/components/NotificationsSheet';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   LayoutDashboard, 
   Users, 
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,6 +39,7 @@ const SIDEBAR_STATE_KEY = 'meditrack-sidebar-state';
 
 export const Layout = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   // Initialize sidebar state from localStorage, default to closed
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -53,6 +56,15 @@ export const Layout = () => {
   }, [sidebarOpen]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
+  };
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
@@ -163,6 +175,7 @@ export const Layout = () => {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
+                  onClick={handleLogout}
                   className="w-full justify-center bg-gradient-to-br from-destructive/10 to-destructive/5 border border-destructive/20 hover:border-destructive/40 hover:shadow-lg transition-all duration-200"
                 >
                   <LogOut className="h-4 w-4 shrink-0 text-destructive" />
@@ -175,6 +188,7 @@ export const Layout = () => {
           ) : (
             <Button
               variant="ghost"
+              onClick={handleLogout}
               className="w-full justify-start gap-3 bg-gradient-to-br from-destructive/10 to-destructive/5 border border-destructive/20 hover:border-destructive/40 hover:shadow-lg transition-all duration-200"
             >
               <LogOut className="h-4 w-4 shrink-0 text-destructive" />
@@ -199,7 +213,9 @@ export const Layout = () => {
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Welcome back, Dr. Smith</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                Welcome back, {user?.full_name || user?.username || 'Doctor'}
+              </h2>
               <p className="text-xs text-muted-foreground">
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
@@ -224,9 +240,9 @@ export const Layout = () => {
                 <PopoverTrigger asChild>
                   <button className="hover:bg-accent/50 rounded-lg transition-colors p-1.5 -m-1.5">
                     <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-transparent hover:ring-primary/20 transition-all">
-                      <AvatarImage src="/placeholder.svg" alt="Profile" />
+                      <AvatarImage src={user?.avatar_url || undefined} alt="Profile" />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-xs font-semibold">
-                        DS
+                        {user?.username?.substring(0, 2).toUpperCase() || 'DR'}
                       </AvatarFallback>
                     </Avatar>
                   </button>

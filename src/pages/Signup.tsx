@@ -1,25 +1,33 @@
 // Signup page with comprehensive registration form
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { MedicalSpecialty, type SignupFormData } from '@/types/auth';
 
 export const Signup = React.memo(() => {
+  const { signup } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<SignupFormData>({
     username: '',
     email: '',
+    full_name: '',
     specialty: MedicalSpecialty.OTHER,
     password: '',
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const specialtyOptions = useMemo(() => Object.values(MedicalSpecialty), []);
 
@@ -66,12 +74,24 @@ export const Signup = React.memo(() => {
     setShowConfirmPassword(prev => !prev);
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passwordsMatch) return;
-    // Auth logic will be implemented later
-    console.log('Signup attempt:', formData);
-  }, [formData, passwordsMatch]);
+    if (!passwordsMatch) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+      await signup(formData);
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      toast.error(error.message || 'Signup failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formData, passwordsMatch, signup]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -91,13 +111,28 @@ export const Signup = React.memo(() => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="full_name" className="text-xs font-medium">
+                Full Name
+              </Label>
+              <Input
+                id="full_name"
+                type="text"
+                placeholder="Dr. John Smith"
+                value={formData.full_name}
+                onChange={handleInputChange('full_name')}
+                className="h-9 text-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="username" className="text-xs font-medium">
                 Username
               </Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your name"
+                placeholder="Enter username"
                 value={formData.username}
                 onChange={handleInputChange('username')}
                 className="h-9 text-sm"
@@ -228,9 +263,9 @@ export const Signup = React.memo(() => {
             <Button
               type="submit"
               className="w-full h-9 text-sm font-medium bg-gradient-to-r from-primary to-primary-hover shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-all"
-              disabled={!passwordsMatch}
+              disabled={!passwordsMatch || isSubmitting}
             >
-              Create Account
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </Button>
 
             <div className="text-center pt-4 border-t border-border/40">
@@ -247,6 +282,21 @@ export const Signup = React.memo(() => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Success Modal */}
+      <AlertDialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Account Created Successfully!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your account has been created. Please sign in to access the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button onClick={() => navigate('/login')}>Go to Login</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
