@@ -1,11 +1,30 @@
 // AI Chat page with simulated ChatGPT-style interactions
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Sparkles, Loader2, History, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -25,6 +44,7 @@ const SIMULATED_RESPONSES = [
 ];
 
 const AIChat = React.memo(() => {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -35,21 +55,17 @@ const AIChat = React.memo(() => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      // Scroll to bottom smoothly
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    // Use requestAnimationFrame for smoother scroll after render
-    requestAnimationFrame(() => {
-      scrollToBottom();
-    });
+    scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
   const simulateAIResponse = useCallback((userMessage: string): string => {
@@ -121,23 +137,89 @@ const AIChat = React.memo(() => {
     }
   }, [handleSend]);
 
+  const handleClearHistory = useCallback(() => {
+    setMessages([
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'Hello! I\'m your AI medical assistant. I can help answer questions about patient care, drug interactions, treatment protocols, and general medical inquiries. How can I assist you today?',
+        timestamp: new Date(),
+      },
+    ]);
+    setShowDeleteDialog(false);
+    setShowHistory(false);
+    toast({
+      title: 'Conversation cleared',
+      description: 'Your chat history has been deleted.',
+    });
+  }, [toast]);
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-background via-background to-primary/5 rounded-2xl border border-border/40 shadow-xl overflow-hidden">
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg shadow-primary/20">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-hover flex items-center justify-center shadow-lg shadow-primary/20">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-foreground">AI Medical Assistant</h1>
+              <p className="text-xs text-muted-foreground">Powered by advanced medical AI</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">AI Medical Assistant</h1>
-            <p className="text-xs text-muted-foreground">Powered by advanced medical AI</p>
+          <div className="flex items-center gap-1">
+            <Dialog open={showHistory} onOpenChange={setShowHistory}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  <span className="text-xs">History</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle>Chat History</DialogTitle>
+                  <DialogDescription>
+                    View your conversation history with the AI assistant
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="h-[500px] pr-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className="rounded-lg border p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {message.role === 'user' ? 'You' : 'AI Assistant'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {message.timestamp.toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="text-xs">Clear</span>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-6">
         <div className="space-y-6 max-w-4xl mx-auto">
           {messages.map((message) => (
             <div
@@ -194,6 +276,7 @@ const AIChat = React.memo(() => {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
@@ -224,6 +307,24 @@ const AIChat = React.memo(() => {
           This is a simulated AI assistant for demonstration purposes. Responses are pre-programmed and not actual medical advice.
         </p>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all messages in this conversation. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearHistory} className="bg-destructive hover:bg-destructive/90">
+              Clear Conversation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

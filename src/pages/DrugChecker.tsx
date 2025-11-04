@@ -1,5 +1,6 @@
 // Professional drug interaction checker with DrugBank-quality features
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,6 +37,18 @@ const DrugChecker = () => {
     clearAll,
     checkInteractions,
   } = useDrugInteraction();
+
+  // Keyboard shortcut: Ctrl+Enter to check interactions
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Enter' && stats.canCheck && !isChecking) {
+        e.preventDefault();
+        checkInteractions();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [stats.canCheck, isChecking, checkInteractions]);
 
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
@@ -150,23 +163,23 @@ const DrugChecker = () => {
               />
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <div className="flex gap-2 pt-2">
                 <Button
                   onClick={checkInteractions}
                   disabled={!stats.canCheck || isChecking}
-                  className="flex-1 gap-2 h-10 md:h-11"
-                  size="lg"
+                  variant="secondary"
+                  className="gap-2 h-9"
+                  size="sm"
                 >
                   {isChecking ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="hidden sm:inline">Analyzing Interactions...</span>
-                      <span className="sm:hidden">Analyzing...</span>
+                      <div className="h-3 w-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                      <span className="text-xs">Analyzing...</span>
                     </>
                   ) : (
                     <>
-                      <Search className="h-4 w-4" />
-                      Check Interactions
+                      <Search className="h-3 w-3" />
+                      <span className="text-xs">Check (Ctrl+Enter)</span>
                     </>
                   )}
                 </Button>
@@ -174,12 +187,11 @@ const DrugChecker = () => {
                   onClick={clearAll}
                   variant="outline"
                   disabled={!stats.hasSelected}
-                  className="gap-2 h-10 md:h-11 sm:w-auto"
-                  size="lg"
+                  className="gap-2 h-9"
+                  size="sm"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Clear All</span>
-                  <span className="sm:hidden">Clear</span>
+                  <Trash2 className="h-3 w-3" />
+                  <span className="text-xs">Clear All</span>
                 </Button>
               </div>
 
