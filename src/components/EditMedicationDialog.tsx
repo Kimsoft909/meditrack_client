@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Medication } from '@/types/patient';
+import { Medication, MedicationUpdate } from '@/types/patient';
 import { toast } from 'sonner';
+import { patientService } from '@/services/patientService';
+import { logger } from '@/utils/logger';
 
 interface EditMedicationDialogProps {
   medication: Medication | null;
@@ -19,6 +21,7 @@ interface EditMedicationDialogProps {
 }
 
 export const EditMedicationDialog = memo(({ medication, open, onOpenChange, onSuccess }: EditMedicationDialogProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     dosage: '',
     frequency: '',
@@ -39,18 +42,33 @@ export const EditMedicationDialog = memo(({ medication, open, onOpenChange, onSu
     }
   }, [medication]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mock: Update medication
-    console.log('Updated medication:', {
-      medication_id: medication?.id,
-      ...formData,
-    });
+    if (!medication) return;
 
-    toast.success('Medication updated successfully');
-    onOpenChange(false);
-    onSuccess?.();
+    setIsSubmitting(true);
+    try {
+      const updates: MedicationUpdate = {
+        dosage: formData.dosage,
+        frequency: formData.frequency,
+        route: formData.route || undefined,
+        notes: formData.notes || undefined,
+        is_active: formData.is_active,
+      };
+
+      await patientService.updateMedication(medication.id, updates);
+      logger.info('Medication updated', { medicationId: medication.id });
+
+      toast.success('Medication updated successfully');
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      logger.error('Failed to update medication', error);
+      toast.error(error.response?.data?.detail || 'Failed to update medication');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!medication) return null;
@@ -130,11 +148,11 @@ export const EditMedicationDialog = memo(({ medication, open, onOpenChange, onSu
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" size="sm">
-              Save Changes
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>

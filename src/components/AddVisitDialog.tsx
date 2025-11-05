@@ -10,6 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { VisitCreate } from '@/types/patient';
+import { patientService } from '@/services/patientService';
+import { logger } from '@/utils/logger';
 
 interface AddVisitDialogProps {
   patientId: string;
@@ -18,37 +21,58 @@ interface AddVisitDialogProps {
 
 export const AddVisitDialog = memo(({ patientId, onSuccess }: AddVisitDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [visitData, setVisitData] = useState({
     visit_type: 'routine' as 'routine' | 'emergency' | 'follow-up',
     department: '',
+    provider: '',
     chief_complaint: '',
     diagnosis: '',
     treatment: '',
     notes: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mock: Add visit to patient record
-    console.log('New visit recorded:', {
-      patient_id: patientId,
-      visit_date: new Date(),
-      provider: 'Dr. System Admin',
-      ...visitData,
-    });
+    if (!visitData.chief_complaint || !visitData.diagnosis) {
+      toast.error('Please fill in chief complaint and diagnosis');
+      return;
+    }
 
-    toast.success('Visit recorded successfully');
-    setOpen(false);
-    setVisitData({
-      visit_type: 'routine',
-      department: '',
-      chief_complaint: '',
-      diagnosis: '',
-      treatment: '',
-      notes: '',
-    });
-    onSuccess?.();
+    setIsSubmitting(true);
+    try {
+      const visit: VisitCreate = {
+        visit_type: visitData.visit_type,
+        department: visitData.department || undefined,
+        provider: visitData.provider || undefined,
+        chief_complaint: visitData.chief_complaint,
+        diagnosis: visitData.diagnosis,
+        treatment: visitData.treatment || undefined,
+        notes: visitData.notes || undefined,
+      };
+
+      await patientService.addVisit(patientId, visit);
+      logger.info('Visit recorded', { patientId });
+
+      toast.success('Visit recorded successfully');
+      setOpen(false);
+      setVisitData({
+        visit_type: 'routine',
+        department: '',
+        provider: '',
+        chief_complaint: '',
+        diagnosis: '',
+        treatment: '',
+        notes: '',
+      });
+      onSuccess?.();
+    } catch (error: any) {
+      logger.error('Failed to record visit', error);
+      toast.error(error.response?.data?.detail || 'Failed to record visit');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -144,20 +168,29 @@ export const AddVisitDialog = memo(({ patientId, onSuccess }: AddVisitDialogProp
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="provider" className="text-xs">Provider / Physician</Label>
+            <Input
+              id="provider"
+              value={visitData.provider}
+              onChange={(e) => setVisitData({ ...visitData, provider: e.target.value })}
+              placeholder="Dr. John Smith"
+              className="h-9 text-xs"
+            />
+          </div>
+
           <div className="bg-muted/50 p-3 rounded-md border">
             <p className="text-xs text-muted-foreground">
-              <strong>Provider:</strong> Dr. System Admin (auto-filled)
-              <br />
-              <strong>Visit Date:</strong> {format(new Date(), 'MMMM dd, yyyy - HH:mm')}
+              <strong>Visit Date:</strong> {format(new Date(), 'MMMM dd, yyyy - HH:mm')} (auto-filled)
             </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" size="sm">
-              Record Visit
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? 'Recording...' : 'Record Visit'}
             </Button>
           </div>
         </form>

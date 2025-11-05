@@ -1,6 +1,6 @@
 // Patients list page - Searchable table with filters and quick actions
 
-import { memo, useState, useMemo } from 'react';
+import { memo, useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,43 +13,51 @@ import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
+import { Patient } from '@/types/patient';
 
 const PatientsList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<PatientStatus | 'all'>('all');
   const [riskFilter, setRiskFilter] = useState<RiskLevel | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  // Get all patients for filtering
-  const allPatients = patientService.getPatients().patients;
-
-  // Memoized filtered patients for performance
-  const filteredPatients = useMemo(() => {
-    return allPatients.filter((patient) => {
-      const matchesSearch = 
-        patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patient.id.toLowerCase().includes(searchQuery.toLowerCase());
+  // Fetch patients from backend
+  const fetchPatients = async () => {
+    try {
+      setIsLoading(true);
+      const response = await patientService.getPatients({
+        page: currentPage,
+        pageSize: 50,
+        search: searchQuery || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        riskLevel: riskFilter !== 'all' ? riskFilter : undefined,
+      });
       
-      const matchesStatus = statusFilter === 'all' || patient.status === statusFilter;
-      const matchesRisk = riskFilter === 'all' || patient.riskLevel === riskFilter;
-      
-      return matchesSearch && matchesStatus && matchesRisk;
-    });
-  }, [allPatients, searchQuery, statusFilter, riskFilter, refreshKey]);
+      setPatients(response.patients);
+      setTotalPatients(response.total);
+      setTotalPages(response.totalPages);
+    } catch (error: any) {
+      logger.error('Failed to fetch patients', error);
+      toast.error(error.response?.data?.detail || 'Failed to load patients');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Paginated patients
-  const paginatedPatients = useMemo(() => {
-    const startIndex = (currentPage - 1) * 50;
-    return filteredPatients.slice(startIndex, startIndex + 50);
-  }, [filteredPatients, currentPage]);
-
-  const totalPages = Math.ceil(filteredPatients.length / 50);
-  const totalPatients = allPatients.length;
+  // Fetch on mount and when filters/page change
+  useEffect(() => {
+    fetchPatients();
+  }, [currentPage, searchQuery, statusFilter, riskFilter]);
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
     setCurrentPage(1);
+    fetchPatients();
   };
 
   return (
@@ -59,8 +67,7 @@ const PatientsList = () => {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Patients Directory</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Showing {paginatedPatients.length} of {filteredPatients.length} patients
-            {filteredPatients.length !== totalPatients && ` (${totalPatients} total)`}
+            {isLoading ? 'Loading...' : `Showing ${patients.length} of ${totalPatients} patients`}
           </p>
         </div>
         <AddPatientDialog onSuccess={handleRefresh} />
@@ -149,33 +156,33 @@ const PatientsList = () => {
                       className="border-b border-border hover:bg-accent transition-smooth"
                     >
                       <td className="py-2.5 px-3 text-xs font-medium">{patient.id}</td>
-                      <td className="py-2.5 px-3 text-xs font-medium">{patient.name}</td>
-                      <td className="py-2.5 px-3 text-xs">{patient.age}</td>
-                      <td className="py-2.5 px-3 text-xs">{patient.sex}</td>
-                      <td className="py-2.5 px-3 text-xs">{format(patient.lastVisit, 'MMM d, yyyy')}</td>
-                      <td className="py-2.5 px-3">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${
-                            patient.status === PatientStatus.ACTIVE 
-                              ? 'status-stable' 
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {patient.status}
-                        </Badge>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <RiskBadge level={patient.riskLevel} compact />
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <Link to={`/patient/${patient.id}`}>
-                          <Button variant="outline" size="sm" className="btn-compact">
-                            View
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
+                  <TableCell className="py-2.5 px-3 text-xs font-medium">{patient.name}</TableCell>
+                  <TableCell className="py-2.5 px-3 text-xs">{patient.age}</TableCell>
+                  <TableCell className="py-2.5 px-3 text-xs">{patient.sex}</TableCell>
+                  <TableCell className="py-2.5 px-3 text-xs">{format(patient.lastVisit, 'MMM d, yyyy')}</TableCell>
+                  <TableCell className="py-2.5 px-3">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        patient.status === PatientStatus.ACTIVE 
+                          ? 'status-stable' 
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {patient.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-2.5 px-3">
+                    <RiskBadge level={patient.riskLevel} compact />
+                  </TableCell>
+                  <TableCell className="py-2.5 px-3 text-right">
+                    <Link to={`/patient/${patient.id}`}>
+                      <Button variant="outline" size="sm" className="btn-compact">
+                        View
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
                   ))
                 )}
               </tbody>

@@ -7,11 +7,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Medication, Patient } from '@/types/patient';
+import { Medication, Patient, MedicationCreate } from '@/types/patient';
 import { MoreVertical, Edit, Eye, RefreshCw, StopCircle, Plus, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { patientService } from '@/services/patientService';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 import { Badge } from '@/components/ui/badge';
 import { EditMedicationDialog } from './EditMedicationDialog';
 import { RefillMedicationDialog } from './RefillMedicationDialog';
@@ -29,15 +30,16 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [refillDialogOpen, setRefillDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const [newMed, setNewMed] = useState({
     name: '',
     dosage: '',
     frequency: '',
+    route: '',
     prescribedBy: '',
-    prescriptionNumber: '',
-    instructions: '',
-    refillsRemaining: 0,
+    indication: '',
+    notes: '',
   });
 
   const handleRefillClick = (med: Medication) => {
@@ -60,34 +62,53 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
     }
   };
 
-  const handleDiscontinue = (med: Medication) => {
-    const result = patientService.discontinueMedication(patientId, med.id);
-    if (result) {
-      toast({ title: 'Medication discontinued', description: `${med.name} has been discontinued` });
+  const handleDiscontinue = async (med: Medication) => {
+    try {
+      await patientService.discontinueMedication(med.id);
+      logger.info('Medication discontinued', { medicationId: med.id });
+      toast.success(`${med.name} has been discontinued`);
       onUpdate?.();
+    } catch (error: any) {
+      logger.error('Failed to discontinue medication', error);
+      toast.error(error.response?.data?.detail || 'Failed to discontinue medication');
     }
   };
 
-  const handleAddMedication = (e: React.FormEvent) => {
+  const handleAddMedication = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = patientService.addMedication(patientId, {
-      ...newMed,
-      startDate: new Date(),
-    });
     
-    if (result) {
-      toast({ title: 'Medication added', description: 'New prescription recorded' });
+    setIsSubmitting(true);
+    try {
+      const medicationData: MedicationCreate = {
+        name: newMed.name,
+        dosage: newMed.dosage,
+        frequency: newMed.frequency,
+        route: newMed.route || undefined,
+        prescribed_by: newMed.prescribedBy || undefined,
+        indication: newMed.indication || undefined,
+        notes: newMed.notes || undefined,
+      };
+
+      await patientService.addMedication(patientId, medicationData);
+      logger.info('Medication added', { patientId });
+      
+      toast.success('New prescription recorded');
       setAddDialogOpen(false);
       setNewMed({
         name: '',
         dosage: '',
         frequency: '',
+        route: '',
         prescribedBy: '',
-        prescriptionNumber: '',
-        instructions: '',
-        refillsRemaining: 0,
+        indication: '',
+        notes: '',
       });
       onUpdate?.();
+    } catch (error: any) {
+      logger.error('Failed to add medication', error);
+      toast.error(error.response?.data?.detail || 'Failed to add medication');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -119,7 +140,6 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
               <TableHead>Frequency</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>Prescriber</TableHead>
-              <TableHead className="text-center">Refills</TableHead>
               <TableHead className="text-center">Status</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -127,7 +147,7 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
           <TableBody>
             {activeMedications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No active medications
                 </TableCell>
               </TableRow>
@@ -138,12 +158,7 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                   <TableCell>{med.dosage}</TableCell>
                   <TableCell>{med.frequency}</TableCell>
                   <TableCell>{format(med.startDate, 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{med.prescribedBy}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={med.refillsRemaining > 0 ? 'secondary' : 'destructive'}>
-                      {med.refillsRemaining}
-                    </Badge>
-                  </TableCell>
+                  <TableCell>{med.prescribedBy || 'Not specified'}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant="outline" className="status-stable">Active</Badge>
                   </TableCell>
@@ -163,9 +178,9 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRefillClick(med)} disabled={med.refillsRemaining <= 0}>
+                        <DropdownMenuItem onClick={() => handleRefillClick(med)}>
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Refill
+                          Extend Duration
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDiscontinue(med)} className="text-destructive">
                           <StopCircle className="h-4 w-4 mr-2" />
@@ -218,7 +233,7 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
           <form onSubmit={handleAddMedication} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="medName">Drug Name</Label>
+                <Label htmlFor="medName">Drug Name *</Label>
                 <Input
                   id="medName"
                   value={newMed.name}
@@ -227,23 +242,36 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                 />
               </div>
               <div>
-                <Label htmlFor="dosage">Dosage</Label>
+                <Label htmlFor="dosage">Dosage *</Label>
                 <Input
                   id="dosage"
                   value={newMed.dosage}
                   onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
+                  placeholder="e.g., 500mg"
                   required
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="frequency">Frequency</Label>
-              <Input
-                id="frequency"
-                value={newMed.frequency}
-                onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="frequency">Frequency *</Label>
+                <Input
+                  id="frequency"
+                  value={newMed.frequency}
+                  onChange={(e) => setNewMed({ ...newMed, frequency: e.target.value })}
+                  placeholder="e.g., twice daily"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="route">Route</Label>
+                <Input
+                  id="route"
+                  value={newMed.route}
+                  onChange={(e) => setNewMed({ ...newMed, route: e.target.value })}
+                  placeholder="e.g., oral, IV"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="prescriber">Prescriber</Label>
@@ -251,42 +279,33 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                 id="prescriber"
                 value={newMed.prescribedBy}
                 onChange={(e) => setNewMed({ ...newMed, prescribedBy: e.target.value })}
-                required
               />
             </div>
             <div>
-              <Label htmlFor="rxNumber">Prescription Number</Label>
+              <Label htmlFor="indication">Indication (Reason)</Label>
               <Input
-                id="rxNumber"
-                value={newMed.prescriptionNumber}
-                onChange={(e) => setNewMed({ ...newMed, prescriptionNumber: e.target.value })}
-                required
+                id="indication"
+                value={newMed.indication}
+                onChange={(e) => setNewMed({ ...newMed, indication: e.target.value })}
+                placeholder="Why is this medication prescribed?"
               />
             </div>
             <div>
-              <Label htmlFor="instructions">Instructions</Label>
+              <Label htmlFor="notes">Notes / Instructions</Label>
               <Input
-                id="instructions"
-                value={newMed.instructions}
-                onChange={(e) => setNewMed({ ...newMed, instructions: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="refills">Refills Remaining</Label>
-              <Input
-                id="refills"
-                type="number"
-                value={newMed.refillsRemaining}
-                onChange={(e) => setNewMed({ ...newMed, refillsRemaining: Number(e.target.value) })}
-                required
+                id="notes"
+                value={newMed.notes}
+                onChange={(e) => setNewMed({ ...newMed, notes: e.target.value })}
+                placeholder="Special instructions or notes"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit">Add Medication</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Adding...' : 'Add Medication'}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -324,8 +343,8 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                   <p>{selectedMed.prescribedBy}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Prescription #</Label>
-                  <p className="font-mono text-sm">{selectedMed.prescriptionNumber}</p>
+                  <Label className="text-muted-foreground">Indication</Label>
+                  <p className="text-sm">{selectedMed.indication || 'Not specified'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -334,8 +353,8 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                   <p>{format(selectedMed.startDate, 'MMM dd, yyyy')}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Refills Remaining</Label>
-                  <p>{selectedMed.refillsRemaining}</p>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <p>{selectedMed.is_active ? 'Active' : 'Inactive'}</p>
                 </div>
               </div>
             </div>

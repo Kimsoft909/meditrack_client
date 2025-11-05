@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PatientFormData } from '@/types/patient';
+import { PatientFormData, PatientCreate } from '@/types/patient';
 import { patientService } from '@/services/patientService';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 import { UserPlus, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { calculateBMI } from '@/utils/medical';
@@ -20,43 +21,56 @@ interface AddPatientDialogProps {
 export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<PatientFormData>>({
     allergies: [],
     chronicConditions: [],
-  });
-  const [initialVisit, setInitialVisit] = useState({
-    visit_type: 'routine' as const,
-    department: '',
-    chief_complaint: '',
-    diagnosis: '',
-    notes: '',
   });
 
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate required fields
     if (!formData.firstName || !formData.lastName || !formData.dateOfBirth || 
-        !formData.sex || !formData.contactNumber) {
-      toast.error('Please fill in all required fields');
+        !formData.sex || !formData.contactNumber || !formData.weight || !formData.height) {
+      toast.error('Please fill in all required fields including weight and height');
       return;
     }
 
-    // Calculate BMI if height and weight provided
-    let bmi = 0;
-    if (formData.height && formData.weight) {
-      bmi = calculateBMI(formData.weight, formData.height);
+    setIsSubmitting(true);
+    try {
+      // Transform frontend data to backend schema
+      const patientData: PatientCreate = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        date_of_birth: formData.dateOfBirth,
+        sex: formData.sex,
+        blood_type: formData.bloodType,
+        contact_number: formData.contactNumber,
+        email: formData.email,
+        address: formData.address,
+        weight: formData.weight,
+        height: formData.height,
+        allergies: formData.allergies?.join(', '),
+        chronic_conditions: formData.chronicConditions?.join(', '),
+      };
+
+      const newPatient = await patientService.createPatient(patientData);
+      logger.info('Patient created successfully', { patientId: newPatient.id });
+
+      toast.success(`Patient ${newPatient.name} added successfully!`);
+      setOpen(false);
+      setStep(1);
+      setFormData({ allergies: [], chronicConditions: [] });
+      onSuccess?.();
+    } catch (error: any) {
+      logger.error('Failed to create patient', error);
+      toast.error(error.response?.data?.detail || 'Failed to create patient');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const newPatient = patientService.addPatient(formData as PatientFormData);
-
-    toast.success(`Patient ${newPatient.name} added successfully!`);
-    setOpen(false);
-    setStep(1);
-    setFormData({ allergies: [], chronicConditions: [] });
-    onSuccess?.();
   };
 
   const nextStep = () => {
@@ -72,7 +86,13 @@ export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
         return;
       }
     }
-    setStep(prev => Math.min(4, prev + 1));
+    if (step === 3) {
+      if (!formData.weight || !formData.height) {
+        toast.error('Please provide weight and height');
+        return;
+      }
+    }
+    setStep(prev => Math.min(3, prev + 1));
   };
 
   const prevStep = () => setStep(prev => Math.max(1, prev - 1));
@@ -89,7 +109,7 @@ export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
         <DialogHeader>
           <DialogTitle>Add New Patient</DialogTitle>
           <div className="flex items-center gap-2 mt-4">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={`flex-1 h-1.5 rounded-full transition-smooth ${
@@ -99,7 +119,7 @@ export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Step {step} of 4: {step === 1 ? 'Personal Information' : step === 2 ? 'Contact & Emergency' : step === 3 ? 'Medical Information' : 'Initial Visit (Optional)'}
+            Step {step} of 3: {step === 1 ? 'Personal Information' : step === 2 ? 'Contact Information' : 'Medical Information'}
           </p>
         </DialogHeader>
 
@@ -297,86 +317,6 @@ export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
               </div>
             </div>
           )}
-
-          {/* Step 4: Initial Visit (Optional) */}
-          {step === 4 && (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">Record initial visit details (optional - can be skipped)</p>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="visit_type">Visit Type</Label>
-                  <Select value={initialVisit.visit_type} onValueChange={(val: any) => setInitialVisit({ ...initialVisit, visit_type: val })}>
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="routine">Routine</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                      <SelectItem value="follow-up">Follow-up</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={initialVisit.department} onValueChange={(val) => setInitialVisit({ ...initialVisit, department: val })}>
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Emergency">Emergency</SelectItem>
-                      <SelectItem value="Cardiology">Cardiology</SelectItem>
-                      <SelectItem value="General Medicine">General Medicine</SelectItem>
-                      <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                      <SelectItem value="Surgery">Surgery</SelectItem>
-                      <SelectItem value="Orthopedics">Orthopedics</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="chief_complaint">Chief Complaint / Reason for Visit</Label>
-                <Input
-                  id="chief_complaint"
-                  value={initialVisit.chief_complaint}
-                  onChange={(e) => setInitialVisit({ ...initialVisit, chief_complaint: e.target.value })}
-                  placeholder="Primary reason for visit"
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="diagnosis">Diagnosis</Label>
-                <Input
-                  id="diagnosis"
-                  value={initialVisit.diagnosis}
-                  onChange={(e) => setInitialVisit({ ...initialVisit, diagnosis: e.target.value })}
-                  placeholder="Initial diagnosis or assessment"
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="visit_notes">Clinical Notes</Label>
-                <Input
-                  id="visit_notes"
-                  value={initialVisit.notes}
-                  onChange={(e) => setInitialVisit({ ...initialVisit, notes: e.target.value })}
-                  placeholder="Additional observations or notes"
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="bg-muted/50 p-3 rounded-md border">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Provider:</strong> Dr. System Admin (auto-filled)
-                  <br />
-                  <strong>Visit Date:</strong> {format(new Date(), 'MMM dd, yyyy')} (today)
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Navigation Buttons */}
@@ -392,15 +332,15 @@ export const AddPatientDialog = memo(({ onSuccess }: AddPatientDialogProps) => {
             Previous
           </Button>
 
-          {step < 4 ? (
+          {step < 3 ? (
             <Button size="sm" onClick={nextStep} className="gap-2">
               Next
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button size="sm" onClick={handleSubmit} className="gap-2">
+            <Button size="sm" onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
               <Check className="h-4 w-4" />
-              Create Patient
+              {isSubmitting ? 'Creating...' : 'Create Patient'}
             </Button>
           )}
         </div>

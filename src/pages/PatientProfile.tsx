@@ -1,6 +1,6 @@
 // Patient profile page - Comprehensive patient view with tabbed interface
 
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,17 +15,105 @@ import { AddVitalReadingForm } from '@/components/AddVitalReadingForm';
 import { patientService } from '@/services/patientService';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { logger } from '@/utils/logger';
+import { toast } from 'sonner';
+import { Patient, Visit, Medication, Vitals, VitalResponse, MedicationResponse, VisitResponse } from '@/types/patient';
 
 const PatientProfile = () => {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState('overview');
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  const patient = patientService.getPatientById(id || '');
+  const [isLoading, setIsLoading] = useState(true);
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [vitals, setVitals] = useState<Vitals[]>([]);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
+
+  // Fetch patient data
+  const fetchPatientData = async () => {
+    if (!id) return;
+
+    try {
+      setIsLoading(true);
+      const patientData = await patientService.getPatientById(id);
+      setPatient(patientData);
+
+      // Fetch related data
+      const [vitalsData, medicationsData, visitsData] = await Promise.all([
+        patientService.getPatientVitals(id).catch(() => []),
+        patientService.getPatientMedications(id, false).catch(() => []),
+        patientService.getPatientVisits(id).catch(() => []),
+      ]);
+
+      // Transform vitals
+      setVitals(vitalsData.map((v: VitalResponse) => ({
+        id: v.id,
+        timestamp: new Date(v.timestamp),
+        bloodPressureSystolic: v.blood_pressure_systolic,
+        bloodPressureDiastolic: v.blood_pressure_diastolic,
+        heartRate: v.heart_rate,
+        temperature: v.temperature,
+        oxygenSaturation: v.oxygen_saturation,
+        bloodGlucose: v.blood_glucose,
+      })));
+
+      // Transform medications
+      setMedications(medicationsData.map((m: MedicationResponse) => ({
+        id: m.id,
+        name: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        route: m.route,
+        startDate: new Date(m.start_date || new Date()),
+        endDate: m.end_date ? new Date(m.end_date) : undefined,
+        prescribedBy: m.prescribed_by || 'Not specified',
+        prescriptionNumber: 'N/A',
+        instructions: m.notes || '',
+        refillsRemaining: 0,
+        indication: m.indication,
+        notes: m.notes,
+        drug_id: m.drug_id,
+        is_active: m.is_active,
+      })));
+
+      // Transform visits
+      setVisits(visitsData.map((v: VisitResponse) => ({
+        id: v.id,
+        date: new Date(v.visit_date),
+        visit_type: v.visit_type,
+        department: v.department,
+        provider: v.provider,
+        chief_complaint: v.chief_complaint,
+        diagnosis: v.diagnosis || '',
+        treatment: v.treatment,
+        notes: v.notes || '',
+      })));
+
+      logger.info('Patient profile data loaded', { patientId: id });
+    } catch (error: any) {
+      logger.error('Failed to fetch patient data', error);
+      toast.error(error.response?.data?.detail || 'Failed to load patient data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatientData();
+  }, [id]);
 
   const handleUpdate = () => {
-    setRefreshKey(prev => prev + 1);
+    fetchPatientData();
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Loading patient data...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!patient) {
     return (
@@ -158,7 +246,7 @@ const PatientProfile = () => {
                   </CardHeader>
                   <CardContent>
                     <VitalsChart 
-                      vitals={patient.vitals} 
+                      vitals={vitals} 
                       dataKeys={['heartRate', 'oxygenSaturation']}
                       height={240}
                     />
@@ -171,7 +259,7 @@ const PatientProfile = () => {
                   </CardHeader>
                   <CardContent>
                     <VitalsChart 
-                      vitals={patient.vitals} 
+                      vitals={vitals} 
                       dataKeys={['systolic', 'diastolic']}
                       height={240}
                     />
@@ -179,14 +267,14 @@ const PatientProfile = () => {
                 </Card>
               </div>
 
-              {patient.vitals.some(v => v.bloodGlucose) && (
+              {vitals.some(v => v.bloodGlucose) && (
                 <Card className="medical-card">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold">Blood Glucose</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <VitalsChart 
-                      vitals={patient.vitals.filter(v => v.bloodGlucose).map(v => ({ ...v, glucose: v.bloodGlucose }))} 
+                      vitals={vitals.filter(v => v.bloodGlucose).map(v => ({ ...v, glucose: v.bloodGlucose }))} 
                       dataKeys={['glucose']}
                       height={240}
                     />
@@ -198,7 +286,7 @@ const PatientProfile = () => {
             {/* Treatment Tab */}
             <TabsContent value="treatment" className="space-y-4 mt-4">
               <MedicationTable 
-                medications={patient.medications} 
+                medications={medications} 
                 patientId={patient.id}
                 patient={patient}
                 onUpdate={handleUpdate}
@@ -208,7 +296,7 @@ const PatientProfile = () => {
             {/* History Tab */}
             <TabsContent value="history" className="space-y-4 mt-4">
               <VisitHistoryTable 
-                visits={patient.visits} 
+                visits={visits} 
                 patientId={patient.id}
                 patient={patient}
                 onUpdate={handleUpdate}

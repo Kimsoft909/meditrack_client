@@ -1,156 +1,241 @@
-// Patient data access layer - abstraction over mock data for future API integration
+// Patient data access layer with full backend integration
 
-import { Patient, PatientFormData, VitalReadingInput, Medication, Vitals, PatientStatus, RiskLevel } from '@/types/patient';
-import { mockPatients, PATIENTS_PER_PAGE } from '@/utils/mockData';
-import { generatePatientId, calculateBMI } from '@/utils/medical';
+import { httpClient } from './httpClient';
+import { API_ENDPOINTS } from '@/config/api';
+import { logger } from '@/utils/logger';
+import type {
+  Patient, PatientCreate, PatientUpdate, PatientResponse, PatientListResponse,
+  VitalCreate, VitalResponse, MedicationCreate, MedicationUpdate, MedicationResponse,
+  VisitCreate, VisitResponse, PatientStatus, RiskLevel
+} from '@/types/patient';
 
-// In-memory store (will be replaced with API calls)
-let patientsStore: Patient[] = [...mockPatients];
+// Transform backend PatientResponse to frontend Patient model
+const transformPatient = (backendPatient: PatientResponse): Patient => {
+  return {
+    id: backendPatient.id,
+    name: `${backendPatient.first_name} ${backendPatient.last_name}`,
+    age: backendPatient.age,
+    sex: backendPatient.sex,
+    dateOfBirth: new Date(backendPatient.date_of_birth),
+    contactNumber: backendPatient.contact_number || '',
+    email: backendPatient.email,
+    address: backendPatient.address,
+    bloodType: backendPatient.blood_type,
+    allergies: backendPatient.allergies?.split(',').map(a => a.trim()).filter(Boolean) || [],
+    chronicConditions: backendPatient.chronic_conditions?.split(',').map(c => c.trim()).filter(Boolean) || [],
+    emergencyContact: {
+      name: 'Not provided',
+      phone: 'Not provided',
+      relationship: 'Not provided',
+    },
+    status: backendPatient.status as PatientStatus,
+    riskLevel: backendPatient.risk_level as RiskLevel,
+    lastVisit: new Date(backendPatient.updated_at),
+    vitals: [],
+    medications: [],
+    visits: [],
+    aiAnalyses: [],
+    weight: backendPatient.weight,
+    height: backendPatient.height,
+    bmi: backendPatient.bmi,
+  };
+};
 
 export const patientService = {
-  // Get paginated patients
-  getPatients: (page: number = 1, pageSize: number = PATIENTS_PER_PAGE) => {
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedPatients = patientsStore.slice(startIndex, endIndex);
-    
-    return {
-      patients: paginatedPatients,
-      total: patientsStore.length,
-      page,
-      pageSize,
-      totalPages: Math.ceil(patientsStore.length / pageSize),
-    };
+  // Get paginated patients with filters
+  async getPatients(params: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    status?: string;
+    riskLevel?: string;
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.pageSize) queryParams.append('page_size', params.pageSize.toString());
+      if (params.search) queryParams.append('search', params.search);
+      if (params.status) queryParams.append('status', params.status);
+      if (params.riskLevel) queryParams.append('risk_level', params.riskLevel);
+
+      const url = `${API_ENDPOINTS.patients.list}?${queryParams.toString()}`;
+      const response = await httpClient.get<PatientListResponse>(url, true);
+
+      logger.info('Fetched patients successfully', { count: response.patients.length });
+      
+      return {
+        patients: response.patients.map(transformPatient),
+        total: response.total,
+        page: response.page,
+        pageSize: response.page_size,
+        totalPages: Math.ceil(response.total / response.page_size),
+      };
+    } catch (error) {
+      logger.error('Failed to fetch patients', error);
+      throw error;
+    }
   },
 
   // Get single patient by ID
-  getPatientById: (id: string): Patient | undefined => {
-    return patientsStore.find(p => p.id === id);
-  },
-
-  // Add new patient
-  addPatient: (data: PatientFormData): Patient => {
-    const age = new Date().getFullYear() - new Date(data.dateOfBirth).getFullYear();
-    const name = `${data.firstName} ${data.lastName}`;
-    const dateOfBirth = new Date(data.dateOfBirth);
-    const weight = data.weight || 70;
-    const height = data.height || 1.7;
-    const bmi = calculateBMI(weight, height);
-    
-    const newPatient: Patient = {
-      id: generatePatientId(),
-      name,
-      age,
-      sex: data.sex,
-      dateOfBirth,
-      contactNumber: data.contactNumber,
-      email: data.email,
-      address: data.address,
-      bloodType: data.bloodType,
-      allergies: data.allergies,
-      chronicConditions: data.chronicConditions,
-      emergencyContact: {
-        name: data.emergencyContactName || 'Not provided',
-        phone: data.emergencyContactPhone || 'Not provided',
-        relationship: data.emergencyContactRelationship || 'Not provided',
-      },
-      status: PatientStatus.ACTIVE,
-      riskLevel: RiskLevel.LOW,
-      lastVisit: new Date(),
-      vitals: [],
-      medications: [],
-      visits: [],
-      aiAnalyses: [],
-      photo: data.photo,
-      weight,
-      height,
-      bmi,
-    };
-
-    patientsStore = [newPatient, ...patientsStore];
-    return newPatient;
-  },
-
-  // Update existing patient
-  updatePatient: (id: string, updates: Partial<Patient>): Patient | null => {
-    const index = patientsStore.findIndex(p => p.id === id);
-    if (index === -1) return null;
-
-    // Recalculate BMI if weight or height changed
-    if (updates.weight || updates.height) {
-      const patient = patientsStore[index];
-      const weight = updates.weight ?? patient.weight;
-      const height = updates.height ?? patient.height;
-      updates.bmi = calculateBMI(weight, height);
+  async getPatientById(id: string): Promise<Patient> {
+    try {
+      const response = await httpClient.get<PatientResponse>(API_ENDPOINTS.patients.details(id), true);
+      logger.info('Fetched patient details', { patientId: id });
+      return transformPatient(response);
+    } catch (error) {
+      logger.error('Failed to fetch patient', { patientId: id, error });
+      throw error;
     }
+  },
 
-    patientsStore[index] = { ...patientsStore[index], ...updates };
-    return patientsStore[index];
+  // Create patient
+  async createPatient(data: PatientCreate): Promise<Patient> {
+    try {
+      const response = await httpClient.post<PatientResponse>(API_ENDPOINTS.patients.create, data, true);
+      logger.info('Created new patient', { patientId: response.id });
+      return transformPatient(response);
+    } catch (error) {
+      logger.error('Failed to create patient', error);
+      throw error;
+    }
+  },
+
+  // Update patient
+  async updatePatient(id: string, updates: PatientUpdate): Promise<Patient> {
+    try {
+      const response = await httpClient.patch<PatientResponse>(API_ENDPOINTS.patients.update(id), updates, true);
+      logger.info('Updated patient', { patientId: id });
+      return transformPatient(response);
+    } catch (error) {
+      logger.error('Failed to update patient', { patientId: id, error });
+      throw error;
+    }
+  },
+
+  // Delete patient (soft delete)
+  async deletePatient(id: string): Promise<void> {
+    try {
+      await httpClient.delete(API_ENDPOINTS.patients.delete(id), true);
+      logger.info('Deleted patient', { patientId: id });
+    } catch (error) {
+      logger.error('Failed to delete patient', { patientId: id, error });
+      throw error;
+    }
   },
 
   // Add vital reading
-  addVitalReading: (patientId: string, vitals: VitalReadingInput): Vitals | null => {
-    const patient = patientsStore.find(p => p.id === patientId);
-    if (!patient) return null;
+  async addVitalReading(patientId: string, vital: VitalCreate): Promise<VitalResponse> {
+    try {
+      const response = await httpClient.post<VitalResponse>(
+        API_ENDPOINTS.vitals.create(patientId),
+        vital,
+        true
+      );
+      logger.info('Added vital reading', { patientId, vitalId: response.id });
+      return response;
+    } catch (error) {
+      logger.error('Failed to add vital reading', { patientId, error });
+      throw error;
+    }
+  },
 
-    const newVital: Vitals = {
-      id: `vital-${Date.now()}`,
-      timestamp: vitals.timestamp || new Date(),
-      bloodPressureSystolic: vitals.bloodPressureSystolic,
-      bloodPressureDiastolic: vitals.bloodPressureDiastolic,
-      heartRate: vitals.heartRate,
-      temperature: vitals.temperature,
-      oxygenSaturation: vitals.oxygenSaturation,
-      bloodGlucose: vitals.bloodGlucose,
-    };
-
-    patient.vitals = [newVital, ...patient.vitals];
-    patient.lastVisit = newVital.timestamp;
-    
-    return newVital;
+  // Get patient vitals
+  async getPatientVitals(patientId: string, limit: number = 50): Promise<VitalResponse[]> {
+    try {
+      const url = `${API_ENDPOINTS.vitals.list(patientId)}?limit=${limit}`;
+      const response = await httpClient.get<VitalResponse[]>(url, true);
+      logger.info('Fetched patient vitals', { patientId, count: response.length });
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch vitals', { patientId, error });
+      throw error;
+    }
   },
 
   // Add medication
-  addMedication: (patientId: string, medication: Omit<Medication, 'id'>): Medication | null => {
-    const patient = patientsStore.find(p => p.id === patientId);
-    if (!patient) return null;
+  async addMedication(patientId: string, medication: MedicationCreate): Promise<MedicationResponse> {
+    try {
+      const response = await httpClient.post<MedicationResponse>(
+        API_ENDPOINTS.medications.create(patientId),
+        medication,
+        true
+      );
+      logger.info('Added medication', { patientId, medicationId: response.id });
+      return response;
+    } catch (error) {
+      logger.error('Failed to add medication', { patientId, error });
+      throw error;
+    }
+  },
 
-    const newMedication: Medication = {
-      ...medication,
-      id: `med-${Date.now()}`,
-    };
-
-    patient.medications = [...patient.medications, newMedication];
-    return newMedication;
+  // Get patient medications
+  async getPatientMedications(patientId: string, activeOnly: boolean = true): Promise<MedicationResponse[]> {
+    try {
+      const url = `${API_ENDPOINTS.medications.list(patientId)}?active_only=${activeOnly}`;
+      const response = await httpClient.get<{ medications: MedicationResponse[] }>(url, true);
+      logger.info('Fetched patient medications', { patientId, count: response.medications.length });
+      return response.medications;
+    } catch (error) {
+      logger.error('Failed to fetch medications', { patientId, error });
+      throw error;
+    }
   },
 
   // Update medication
-  updateMedication: (patientId: string, medicationId: string, updates: Partial<Medication>): Medication | null => {
-    const patient = patientsStore.find(p => p.id === patientId);
-    if (!patient) return null;
-
-    const medIndex = patient.medications.findIndex(m => m.id === medicationId);
-    if (medIndex === -1) return null;
-
-    patient.medications[medIndex] = { ...patient.medications[medIndex], ...updates };
-    return patient.medications[medIndex];
+  async updateMedication(medicationId: string, updates: MedicationUpdate): Promise<MedicationResponse> {
+    try {
+      const response = await httpClient.patch<MedicationResponse>(
+        API_ENDPOINTS.medications.update(medicationId),
+        updates,
+        true
+      );
+      logger.info('Updated medication', { medicationId });
+      return response;
+    } catch (error) {
+      logger.error('Failed to update medication', { medicationId, error });
+      throw error;
+    }
   },
 
-  // Discontinue medication (set end date)
-  discontinueMedication: (patientId: string, medicationId: string): Medication | null => {
-    return patientService.updateMedication(patientId, medicationId, { endDate: new Date() });
+  // Discontinue medication
+  async discontinueMedication(medicationId: string): Promise<void> {
+    try {
+      await httpClient.delete(API_ENDPOINTS.medications.discontinue(medicationId), true);
+      logger.info('Discontinued medication', { medicationId });
+    } catch (error) {
+      logger.error('Failed to discontinue medication', { medicationId, error });
+      throw error;
+    }
   },
 
-  // Refill medication (decrement refills)
-  refillMedication: (patientId: string, medicationId: string): Medication | null => {
-    const patient = patientsStore.find(p => p.id === patientId);
-    if (!patient) return null;
+  // Add visit
+  async addVisit(patientId: string, visit: VisitCreate): Promise<VisitResponse> {
+    try {
+      const response = await httpClient.post<VisitResponse>(
+        API_ENDPOINTS.visits.create(patientId),
+        visit,
+        true
+      );
+      logger.info('Recorded visit', { patientId, visitId: response.id });
+      return response;
+    } catch (error) {
+      logger.error('Failed to record visit', { patientId, error });
+      throw error;
+    }
+  },
 
-    const medication = patient.medications.find(m => m.id === medicationId);
-    if (!medication || medication.refillsRemaining <= 0) return null;
-
-    return patientService.updateMedication(patientId, medicationId, {
-      refillsRemaining: medication.refillsRemaining - 1,
-    });
+  // Get patient visits
+  async getPatientVisits(patientId: string): Promise<VisitResponse[]> {
+    try {
+      const response = await httpClient.get<VisitResponse[]>(
+        API_ENDPOINTS.visits.list(patientId),
+        true
+      );
+      logger.info('Fetched patient visits', { patientId, count: response.length });
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch visits', { patientId, error });
+      throw error;
+    }
   },
 };

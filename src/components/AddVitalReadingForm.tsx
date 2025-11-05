@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus } from 'lucide-react';
 import { patientService } from '@/services/patientService';
-import { toast } from '@/hooks/use-toast';
-import { VitalReadingInput } from '@/types/patient';
+import { toast } from 'sonner';
+import { VitalCreate } from '@/types/patient';
+import { logger } from '@/utils/logger';
 
 interface AddVitalReadingFormProps {
   patientId: string;
@@ -16,7 +17,8 @@ interface AddVitalReadingFormProps {
 
 export const AddVitalReadingForm = memo(({ patientId, onSuccess }: AddVitalReadingFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<VitalReadingInput>>({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
     bloodPressureSystolic: 120,
     bloodPressureDiastolic: 80,
     heartRate: 72,
@@ -25,24 +27,39 @@ export const AddVitalReadingForm = memo(({ patientId, onSuccess }: AddVitalReadi
     bloodGlucose: 95,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = patientService.addVitalReading(patientId, formData as VitalReadingInput);
-    
-    if (result) {
-      toast({
-        title: 'Vital reading added',
-        description: 'New vital signs recorded successfully',
-      });
+    setIsSubmitting(true);
+    try {
+      const vitalData: VitalCreate = {
+        blood_pressure_systolic: formData.bloodPressureSystolic,
+        blood_pressure_diastolic: formData.bloodPressureDiastolic,
+        heart_rate: formData.heartRate,
+        temperature: formData.temperature,
+        oxygen_saturation: formData.oxygenSaturation,
+        blood_glucose: formData.bloodGlucose,
+      };
+
+      await patientService.addVitalReading(patientId, vitalData);
+      logger.info('Vital reading added', { patientId });
+      
+      toast.success('Vital reading added successfully');
       setIsOpen(false);
-      onSuccess?.();
-    } else {
-      toast({
-        title: 'Error',
-        description: 'Failed to add vital reading',
-        variant: 'destructive',
+      setFormData({
+        bloodPressureSystolic: 120,
+        bloodPressureDiastolic: 80,
+        heartRate: 72,
+        temperature: 37.0,
+        oxygenSaturation: 98,
+        bloodGlucose: 95,
       });
+      onSuccess?.();
+    } catch (error: any) {
+      logger.error('Failed to add vital reading', error);
+      toast.error(error.response?.data?.detail || 'Failed to add vital reading');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -158,8 +175,8 @@ export const AddVitalReadingForm = memo(({ patientId, onSuccess }: AddVitalReadi
 
       {/* Submit button - Below, aligned right */}
       <div className="flex justify-end pt-2">
-        <Button type="submit" size="sm" className="px-6">
-          Save Reading
+        <Button type="submit" size="sm" className="px-6" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save Reading'}
         </Button>
       </div>
     </form>

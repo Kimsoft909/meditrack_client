@@ -8,10 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Edit, ChevronDown } from 'lucide-react';
-import { Patient, RiskLevel, PatientStatus } from '@/types/patient';
+import { Patient, RiskLevel, PatientStatus, PatientUpdate } from '@/types/patient';
 import { patientService } from '@/services/patientService';
 import { toast } from '@/hooks/use-toast';
 import { calculateBMI } from '@/utils/medical';
+import { logger } from '@/utils/logger';
+import { toast as sonnerToast } from 'sonner';
 
 interface EditPatientDialogProps {
   patient: Patient;
@@ -20,13 +22,13 @@ interface EditPatientDialogProps {
 
 export const EditPatientDialog = memo(({ patient, onSuccess }: EditPatientDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(patient);
   const [openSections, setOpenSections] = useState({
     personal: true,
     contact: false,
     physical: false,
     medical: false,
-    emergency: false,
     admin: false,
   });
 
@@ -34,24 +36,41 @@ export const EditPatientDialog = memo(({ patient, onSuccess }: EditPatientDialog
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = patientService.updatePatient(patient.id, formData);
-    
-    if (result) {
-      toast({
-        title: 'Patient updated',
-        description: 'Profile changes saved successfully',
-      });
+    setIsSubmitting(true);
+    try {
+      // Split name back into first and last
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+      const updates: PatientUpdate = {
+        first_name: firstName,
+        last_name: lastName,
+        contact_number: formData.contactNumber,
+        email: formData.email,
+        address: formData.address,
+        weight: formData.weight,
+        height: formData.height,
+        allergies: formData.allergies.join(', '),
+        chronic_conditions: formData.chronicConditions.join(', '),
+        status: formData.status,
+        risk_level: formData.riskLevel,
+      };
+
+      await patientService.updatePatient(patient.id, updates);
+      logger.info('Patient updated successfully', { patientId: patient.id });
+      
+      sonnerToast.success('Patient updated successfully');
       setOpen(false);
       onSuccess?.();
-    } else {
-      toast({
-        title: 'Error',
-        description: 'Failed to update patient',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      logger.error('Failed to update patient', error);
+      sonnerToast.error(error.response?.data?.detail || 'Failed to update patient');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -225,51 +244,6 @@ export const EditPatientDialog = memo(({ patient, onSuccess }: EditPatientDialog
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Emergency Contact */}
-          <Collapsible open={openSections.emergency} onOpenChange={() => toggleSection('emergency')}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
-              <span className="font-semibold">Emergency Contact</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openSections.emergency ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="emergencyName">Name</Label>
-                  <Input
-                    id="emergencyName"
-                    value={formData.emergencyContact.name}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      emergencyContact: { ...formData.emergencyContact, name: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emergencyRelationship">Relationship</Label>
-                  <Input
-                    id="emergencyRelationship"
-                    value={formData.emergencyContact.relationship}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      emergencyContact: { ...formData.emergencyContact, relationship: e.target.value }
-                    })}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="emergencyPhone">Phone</Label>
-                <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyContact.phone}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    emergencyContact: { ...formData.emergencyContact, phone: e.target.value }
-                  })}
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
           {/* Administrative */}
           <Collapsible open={openSections.admin} onOpenChange={() => toggleSection('admin')}>
             <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80">
@@ -310,10 +284,12 @@ export const EditPatientDialog = memo(({ patient, onSuccess }: EditPatientDialog
           </Collapsible>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
         </form>
       </DialogContent>
