@@ -1,22 +1,12 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
+  # PostgreSQL Database (managed by Render)
+  - type: postgres
     name: meditrack-postgres
-    env: docker
     plan: starter
     region: oregon
-    dockerfilePath: ./Dockerfile.postgres
-    envVars:
-      - key: POSTGRES_DB
-        value: meditrack_db
-      - key: POSTGRES_USER
-        value: meditrack_user
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-    disk:
-      name: meditrack-postgres-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 10
+    databaseName: meditrack_db
+    databaseUser: meditrack_user
+    ipAllowList: []
 
   # Redis Cache
   - type: redis
@@ -37,7 +27,9 @@ services:
       cd meditrack_api &&
       pip install --upgrade pip &&
       pip install -r requirements.txt &&
-      alembic upgrade head
+      alembic upgrade head &&
+      python -m app.db.seed_data &&
+      python -m app.db.seed_patients
     startCommand: |
       cd meditrack_api &&
       uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
