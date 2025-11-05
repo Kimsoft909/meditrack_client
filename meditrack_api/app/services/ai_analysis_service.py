@@ -374,12 +374,12 @@ Focus on clinical significance and actionable insights. Use professional medical
                 risk_level=patient.risk_level
             ),
             report_date=analysis.report_date,
-            analysis_date_range={},
-            generated_by="Dr. AI Assistant",
+            analysis_date_range=analysis.metadata.get("analysis_date_range", {}) if analysis.metadata else {},
+            generated_by=analysis.generated_by,
             executive_summary=analysis.executive_summary,
-            overall_health_score=None,
-            sections={"recommendations": analysis.recommendations},
-            metadata={}
+            overall_health_score=analysis.overall_health_score,
+            sections=analysis.sections,
+            metadata=analysis.metadata or {}
         )
     
     async def export_report_pdf(self, report_id: str) -> bytes:

@@ -74,5 +74,9 @@ async def export_report_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=analysis_{report_id}.pdf"}
+        headers={
+            "Content-Disposition": f"attachment; filename=analysis_{report_id}.pdf",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
