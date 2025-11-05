@@ -8,7 +8,7 @@ from typing import List
 
 from app.core.database import get_db
 from app.api.deps import get_current_user
-from app.schemas.visit import VisitCreate, VisitResponse
+from app.schemas.visit import VisitCreate, VisitResponse, VisitListResponse
 from app.services.visit_service import VisitService
 from app.models.user import User
 
@@ -28,7 +28,7 @@ async def create_visit(
     return await service.create_visit(patient_id, visit)
 
 
-@router.get("/patients/{patient_id}/visits", response_model=List[VisitResponse])
+@router.get("/patients/{patient_id}/visits", response_model=VisitListResponse)
 async def get_patient_visits(
     patient_id: str,
     db: AsyncSession = Depends(get_db),

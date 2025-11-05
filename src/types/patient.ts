@@ -261,3 +261,10 @@ export interface VisitResponse extends VisitCreate {
   patient_id: string;
   visit_date: string;
 }
+
+export interface VisitListResponse {
+  total: number;
+  page: number;
+  page_size: number;
+  visits: VisitResponse[];
+}

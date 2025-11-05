@@ -227,12 +227,21 @@ export const patientService = {
   // Get patient visits
   async getPatientVisits(patientId: string): Promise<VisitResponse[]> {
     try {
-      const response = await httpClient.get<VisitResponse[]>(
+      const response = await httpClient.get<{
+        visits: VisitResponse[];
+        total: number;
+        page: number;
+        page_size: number;
+      }>(
         API_ENDPOINTS.visits.list(patientId),
         true
       );
-      logger.info('Fetched patient visits', { patientId, count: response.length });
-      return response;
+      logger.info('Fetched patient visits', { 
+        patientId, 
+        count: response.visits.length,
+        total: response.total 
+      });
+      return response.visits;
     } catch (error) {
       logger.error('Failed to fetch visits', { patientId, error });
       throw error;
