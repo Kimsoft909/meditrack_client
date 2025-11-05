@@ -98,30 +98,6 @@ const DrugChecker = () => {
         </div>
       </div>
 
-      {/* Statistics Dashboard */}
-      {stats.hasSelected && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <StatCard
-            title="Drugs Selected"
-            value={selectedDrugs.length}
-            icon={Pill}
-            variant="default"
-          />
-          <StatCard
-            title="Interactions Found"
-            value={stats.total}
-            icon={Activity}
-            variant={stats.contraindicated > 0 ? 'critical' : stats.major > 0 ? 'warning' : 'default'}
-            subtitle={stats.total > 0 ? `${stats.contraindicated + stats.major} require attention` : undefined}
-          />
-          <StatCard
-            title="Critical Alerts"
-            value={stats.contraindicated}
-            icon={stats.contraindicated > 0 ? ShieldAlert : AlertTriangle}
-            variant={stats.contraindicated > 0 ? 'critical' : 'default'}
-          />
-        </div>
-      )}
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="checker" className="space-y-4 md:space-y-6">

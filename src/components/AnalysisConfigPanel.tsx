@@ -67,15 +67,15 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-5 h-fit">
+    <div className="bg-card border border-border rounded-lg p-3 space-y-2.5 h-fit">
       <div>
-        <h3 className="text-base sm:text-lg font-semibold mb-1">Configuration</h3>
-        <p className="text-xs sm:text-sm text-muted-foreground">Select patient and analysis parameters</p>
+        <h3 className="text-sm font-semibold mb-0.5">Configuration</h3>
+        <p className="text-[10px] text-muted-foreground">Select patient and analysis parameters</p>
       </div>
 
       {/* Patient Search */}
-      <div className="space-y-2">
-        <Label className="text-xs sm:text-sm">Patient</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Patient</Label>
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -83,17 +83,17 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               role="combobox"
               size="sm"
               aria-expanded={searchOpen}
-              className="w-full justify-between h-9"
+              className="w-full justify-between h-7"
             >
-              <span className="truncate text-xs sm:text-sm">{selectedPatientName || "Search patient..."}</span>
-              <Search className="ml-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0 opacity-50" />
+              <span className="truncate text-xs">{selectedPatientName || "Search patient..."}</span>
+              <Search className="ml-2 h-3 w-3 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[400px] p-0" align="start">
             <Command>
-              <CommandInput placeholder="Search by name or ID..." />
-              <CommandEmpty>No patient found.</CommandEmpty>
-              <CommandGroup className="max-h-64 overflow-auto">
+              <CommandInput placeholder="Search by name..." className="h-7 text-xs" />
+              <CommandEmpty className="text-xs py-2">No patient found.</CommandEmpty>
+              <CommandGroup className="max-h-48 overflow-auto">
                 {patients.map((patient) => (
                   <CommandItem
                     key={patient.id}
@@ -103,10 +103,11 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                       setSelectedPatientName(`${patient.name} (${patient.id})`);
                       setSearchOpen(false);
                     }}
+                    className="text-xs"
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm">{patient.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="font-medium text-xs">{patient.name}</span>
+                      <span className="text-[10px] text-muted-foreground">
                         {patient.id} • {patient.age}yo • {patient.sex}
                       </span>
                     </div>
@@ -119,21 +120,21 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
       </div>
 
       {/* Date Range */}
-      <div className="space-y-2">
-        <Label className="text-xs sm:text-sm">Analysis Period</Label>
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="space-y-1.5">
+        <Label className="text-xs">Analysis Period</Label>
+        <div className="flex flex-col sm:flex-row gap-1.5">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "flex-1 justify-start text-left font-normal h-9 text-xs sm:text-sm",
+                  "flex-1 justify-start text-left font-normal h-7 text-xs",
                   !dateRange.from && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">{dateRange.from ? format(dateRange.from, "PP") : "From date"}</span>
+                <CalendarIcon className="mr-1.5 h-3 w-3" />
+                <span className="truncate">{dateRange.from ? format(dateRange.from, "PP") : "From"}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -152,12 +153,12 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "flex-1 justify-start text-left font-normal h-9 text-xs sm:text-sm",
+                  "flex-1 justify-start text-left font-normal h-7 text-xs",
                   !dateRange.to && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="truncate">{dateRange.to ? format(dateRange.to, "PP") : "To date"}</span>
+                <CalendarIcon className="mr-1.5 h-3 w-3" />
+                <span className="truncate">{dateRange.to ? format(dateRange.to, "PP") : "To"}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -171,27 +172,27 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
           </Popover>
         </div>
         
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(30)}>
+        <div className="flex flex-wrap gap-1">
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleQuickDateRange(30)}>
             30d
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(90)}>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleQuickDateRange(90)}>
             3mo
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(180)}>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleQuickDateRange(180)}>
             6mo
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs px-2 sm:px-3" onClick={() => handleQuickDateRange(365)}>
+          <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleQuickDateRange(365)}>
             1yr
           </Button>
         </div>
       </div>
 
       {/* Analysis Options */}
-      <div className="space-y-2 sm:space-y-3">
-        <Label className="text-xs sm:text-sm">Include in Report</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Include in Report</Label>
         
-        <div className="space-y-1.5 sm:space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="vitals"
@@ -199,10 +200,11 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               onCheckedChange={(checked) =>
                 setOptions({ ...options, includeVitals: checked as boolean })
               }
+              className="h-3 w-3"
             />
-            <Label htmlFor="vitals" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
-              <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-              Vital Signs Analysis
+            <Label htmlFor="vitals" className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <Activity className="h-3 w-3 text-primary" />
+              Vital Signs
             </Label>
           </div>
 
@@ -213,10 +215,11 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               onCheckedChange={(checked) =>
                 setOptions({ ...options, includeMedications: checked as boolean })
               }
+              className="h-3 w-3"
             />
-            <Label htmlFor="medications" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
-              <Pill className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-              Medication Review
+            <Label htmlFor="medications" className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <Pill className="h-3 w-3 text-primary" />
+              Medications
             </Label>
           </div>
 
@@ -227,9 +230,10 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               onCheckedChange={(checked) =>
                 setOptions({ ...options, includeRiskAssessment: checked as boolean })
               }
+              className="h-3 w-3"
             />
-            <Label htmlFor="risk" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+            <Label htmlFor="risk" className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <AlertTriangle className="h-3 w-3 text-primary" />
               Risk Assessment
             </Label>
           </div>
@@ -241,10 +245,11 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               onCheckedChange={(checked) =>
                 setOptions({ ...options, includeTrendAnalysis: checked as boolean })
               }
+              className="h-3 w-3"
             />
-            <Label htmlFor="trends" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-              Trend Detection
+            <Label htmlFor="trends" className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <TrendingUp className="h-3 w-3 text-primary" />
+              Trends
             </Label>
           </div>
 
@@ -255,10 +260,11 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
               onCheckedChange={(checked) =>
                 setOptions({ ...options, includeComparativeAnalysis: checked as boolean })
               }
+              className="h-3 w-3"
             />
-            <Label htmlFor="comparative" className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm">
-              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-              Comparative Analysis
+            <Label htmlFor="comparative" className="flex items-center gap-1.5 cursor-pointer text-xs">
+              <BarChart3 className="h-3 w-3 text-primary" />
+              Comparative
             </Label>
           </div>
         </div>
@@ -268,16 +274,16 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
       <Button
         onClick={handleGenerate}
         disabled={!selectedPatientId || isGenerating}
-        className="w-full h-9"
+        className="w-full h-7"
         size="sm"
       >
         {isGenerating ? (
           <>
-            <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-            <span className="text-xs sm:text-sm">Generating...</span>
+            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+            <span className="text-xs">Generating...</span>
           </>
         ) : (
-          <span className="text-xs sm:text-sm">Generate Report</span>
+          <span className="text-xs">Generate Report</span>
         )}
       </Button>
     </div>

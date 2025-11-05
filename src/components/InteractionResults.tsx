@@ -70,35 +70,39 @@ export function InteractionResults({ interactions, drugCount }: InteractionResul
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-primary" />
+      {/* Summary Card - Compact */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-1.5">
+            <AlertCircle className="h-4 w-4 text-primary" />
             Analysis Complete
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{drugCount}</div>
-              <div className="text-xs text-muted-foreground">Drugs Analyzed</div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+            <div className="text-center p-2 bg-muted/30 rounded-md">
+              <div className="text-lg font-bold">{drugCount}</div>
+              <div className="text-[10px] text-muted-foreground">Drugs</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{interactions.length}</div>
-              <div className="text-xs text-muted-foreground">Interactions</div>
+            <div className="text-center p-2 bg-muted/30 rounded-md">
+              <div className="text-lg font-bold">{interactions.length}</div>
+              <div className="text-[10px] text-muted-foreground">Total</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">{groupedInteractions.contraindicated.length}</div>
-              <div className="text-xs text-muted-foreground">Contraindicated</div>
+            <div className="text-center p-2 bg-destructive/5 rounded-md">
+              <div className="text-lg font-bold text-destructive">{groupedInteractions.contraindicated.length}</div>
+              <div className="text-[10px] text-muted-foreground">Contra</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">{groupedInteractions.major.length}</div>
-              <div className="text-xs text-muted-foreground">Major</div>
+            <div className="text-center p-2 bg-orange-50 dark:bg-orange-950/20 rounded-md">
+              <div className="text-lg font-bold text-orange-600">{groupedInteractions.major.length}</div>
+              <div className="text-[10px] text-muted-foreground">Major</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-amber-600">{groupedInteractions.moderate.length}</div>
-              <div className="text-xs text-muted-foreground">Moderate</div>
+            <div className="text-center p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+              <div className="text-lg font-bold text-amber-600">{groupedInteractions.moderate.length}</div>
+              <div className="text-[10px] text-muted-foreground">Moderate</div>
+            </div>
+            <div className="text-center p-2 bg-muted/20 rounded-md">
+              <div className="text-lg font-bold text-muted-foreground">{groupedInteractions.minor.length}</div>
+              <div className="text-[10px] text-muted-foreground">Minor</div>
             </div>
           </div>
         </CardContent>

@@ -32,15 +32,15 @@ export default function AIAnalysis() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Brain className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Brain className="h-5 w-5 text-primary" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold">AI Clinical Analysis</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">AI Clinical Analysis</h1>
           </div>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <p className="text-muted-foreground text-xs sm:text-sm">
             Generate comprehensive patient analysis reports powered by AI
           </p>
         </div>
@@ -51,24 +51,24 @@ export default function AIAnalysis() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-16rem)]">
-        {/* Configuration Panel - Independent scroll */}
-        <div className="lg:col-span-1 overflow-y-auto pr-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)] overflow-hidden">
+        {/* Configuration Panel - Static, no scroll */}
+        <div className="lg:col-span-1 sticky top-0 h-fit">
           <AnalysisConfigPanel
             onGenerate={handleGenerateReport}
             isGenerating={isGenerating}
           />
         </div>
 
-        {/* Report Display - Independent scroll */}
-        <div className="lg:col-span-2 overflow-y-auto pr-2">
+        {/* Report Display - Independent scroll with custom scrollbar */}
+        <div className="lg:col-span-2 overflow-y-auto report-scroll h-full">
           {generatedReport ? (
             <AnalysisReportDocument report={generatedReport} />
           ) : (
-            <div className="bg-card border border-dashed border-border/50 rounded-lg p-8 sm:p-12 text-center">
-              <Brain className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-base sm:text-lg font-semibold mb-2">No Report Generated Yet</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
+            <div className="bg-card border border-dashed border-border/50 rounded-lg p-8 sm:p-10 text-center">
+              <Brain className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/30 mx-auto mb-3" />
+              <h3 className="text-sm sm:text-base font-semibold mb-1.5">No Report Generated Yet</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Select a patient and configure analysis parameters to generate a comprehensive
                 clinical analysis report.
               </p>
