@@ -143,46 +143,46 @@ const PatientsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedPatients.length === 0 ? (
+                {patients.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="text-center py-8">
                       <p className="text-xs text-muted-foreground">No patients found</p>
                     </td>
                   </tr>
                 ) : (
-                  paginatedPatients.map((patient) => (
+                  patients.map((patient) => (
                     <tr 
                       key={patient.id}
                       className="border-b border-border hover:bg-accent transition-smooth"
                     >
                       <td className="py-2.5 px-3 text-xs font-medium">{patient.id}</td>
-                  <TableCell className="py-2.5 px-3 text-xs font-medium">{patient.name}</TableCell>
-                  <TableCell className="py-2.5 px-3 text-xs">{patient.age}</TableCell>
-                  <TableCell className="py-2.5 px-3 text-xs">{patient.sex}</TableCell>
-                  <TableCell className="py-2.5 px-3 text-xs">{format(patient.lastVisit, 'MMM d, yyyy')}</TableCell>
-                  <TableCell className="py-2.5 px-3">
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        patient.status === PatientStatus.ACTIVE 
-                          ? 'status-stable' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {patient.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-2.5 px-3">
-                    <RiskBadge level={patient.riskLevel} compact />
-                  </TableCell>
-                  <TableCell className="py-2.5 px-3 text-right">
-                    <Link to={`/patient/${patient.id}`}>
-                      <Button variant="outline" size="sm" className="btn-compact">
-                        View
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
+                      <td className="py-2.5 px-3 text-xs font-medium">{patient.name}</td>
+                      <td className="py-2.5 px-3 text-xs">{patient.age}</td>
+                      <td className="py-2.5 px-3 text-xs">{patient.sex}</td>
+                      <td className="py-2.5 px-3 text-xs">{format(patient.lastVisit, 'MMM d, yyyy')}</td>
+                      <td className="py-2.5 px-3">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            patient.status === PatientStatus.ACTIVE 
+                              ? 'status-stable' 
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {patient.status}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <RiskBadge level={patient.riskLevel} compact />
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <Link to={`/patient/${patient.id}`}>
+                          <Button variant="outline" size="sm" className="btn-compact">
+                            View
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>

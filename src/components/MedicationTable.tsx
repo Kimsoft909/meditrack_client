@@ -55,9 +55,9 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
   const handleExportPDF = () => {
     try {
       exportPrescriptionsPDF(patient, medications);
-      toast({ title: 'Success', description: 'Prescriptions exported to PDF' });
+      toast.success('Prescriptions exported to PDF');
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to export PDF', variant: 'destructive' });
+      toast.error('Failed to export PDF');
       console.error(error);
     }
   };

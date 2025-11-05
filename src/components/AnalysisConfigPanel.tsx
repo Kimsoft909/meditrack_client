@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
@@ -24,6 +24,7 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [selectedPatientName, setSelectedPatientName] = useState<string>('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [patients, setPatients] = useState<any[]>([]);
   
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
@@ -38,7 +39,19 @@ export function AnalysisConfigPanel({ onGenerate, isGenerating }: AnalysisConfig
     includeComparativeAnalysis: false
   });
 
-  const { patients } = patientService.getPatients(1, 100);
+  // Fetch patients on mount
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await patientService.getPatients({ page: 1, pageSize: 100 });
+        setPatients(response.patients);
+      } catch (error) {
+        console.error('Failed to fetch patients', error);
+      }
+    };
+    
+    fetchPatients();
+  }, []);
 
   const handleQuickDateRange = (days: number) => {
     setDateRange({

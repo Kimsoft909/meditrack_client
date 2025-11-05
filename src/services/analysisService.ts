@@ -23,7 +23,7 @@ export async function generatePatientAnalysis(
   dateRange: { from: Date; to: Date },
   options: AnalysisOptions
 ): Promise<AnalysisReport> {
-  const patient = patientService.getPatientById(patientId);
+  const patient = await patientService.getPatientById(patientId);
   if (!patient) {
     throw new Error('Patient not found');
   }
