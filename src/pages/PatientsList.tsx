@@ -128,28 +128,35 @@ const PatientsList = () => {
           <CardTitle className="text-sm font-semibold">Patient Records</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">ID</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Name</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Age</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Sex</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Last Visit</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Status</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Risk</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patients.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-8">
-                      <p className="text-xs text-muted-foreground">No patients found</p>
-                    </td>
+          {isLoading ? (
+            <div className="space-y-2 animate-pulse">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-12 bg-muted rounded"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">ID</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Name</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Age</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Sex</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Last Visit</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">Risk</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-muted-foreground">Actions</th>
                   </tr>
-                ) : (
+                </thead>
+                <tbody>
+                  {patients.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-8">
+                        <p className="text-xs text-muted-foreground">No patients found</p>
+                      </td>
+                    </tr>
+                  ) : (
                   patients.map((patient) => (
                     <tr 
                       key={patient.id}
@@ -188,9 +195,10 @@ const PatientsList = () => {
               </tbody>
             </table>
           </div>
+          )}
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {!isLoading && totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground">
                 Page {currentPage} of {totalPages}

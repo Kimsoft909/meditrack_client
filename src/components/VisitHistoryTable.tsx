@@ -52,7 +52,7 @@ export const VisitHistoryTable = memo(({ patientId, patient, visits, onUpdate }:
     setExpandedVisit(expandedVisit === visitId ? null : visitId);
   };
 
-  const sortedVisits = [...visits].sort((a, b) => b.date.getTime() - a.date.getTime());
+  const sortedVisits = [...visits].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <div className="space-y-4">
@@ -106,7 +106,7 @@ export const VisitHistoryTable = memo(({ patientId, patient, visits, onUpdate }:
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {format(visit.date, 'MMM dd, yyyy')}
+                        {format(new Date(visit.date), 'MMM dd, yyyy')}
                       </div>
                     </TableCell>
                     <TableCell>{getVisitTypeBadge(visit)}</TableCell>
@@ -137,7 +137,7 @@ export const VisitHistoryTable = memo(({ patientId, patient, visits, onUpdate }:
                           <div className="grid grid-cols-3 gap-4 pt-2 border-t">
                             <div>
                               <span className="text-xs text-muted-foreground">Visit Date</span>
-                              <p className="text-sm font-medium">{format(visit.date, 'MMMM dd, yyyy')}</p>
+                              <p className="text-sm font-medium">{format(new Date(visit.date), 'MMMM dd, yyyy')}</p>
                             </div>
                             <div>
                               <span className="text-xs text-muted-foreground">Chief Complaint</span>

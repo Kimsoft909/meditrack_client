@@ -107,9 +107,17 @@ const PatientProfile = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">Loading patient data...</p>
+      <div className="space-y-4 p-4 max-w-[1400px] mx-auto animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-20 bg-muted rounded"></div>
+          <div className="flex-1">
+            <div className="h-6 w-48 bg-muted rounded mb-2"></div>
+            <div className="h-4 w-32 bg-muted rounded"></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="h-96 bg-muted rounded-lg"></div>
+          <div className="lg:col-span-3 h-96 bg-muted rounded-lg"></div>
         </div>
       </div>
     );
@@ -196,23 +204,23 @@ const PatientProfile = () => {
 
                 <Card className="medical-card">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold">Emergency Contact</CardTitle>
+                    <CardTitle className="text-sm font-semibold">Allergies</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Name</span>
-                        <span className="font-medium">{patient.emergencyContact.name}</span>
+                    {patient.allergies.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No known allergies</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {patient.allergies.map((allergy, idx) => (
+                          <span 
+                            key={idx}
+                            className="px-3 py-1 rounded-full bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20"
+                          >
+                            {allergy}
+                          </span>
+                        ))}
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Relationship</span>
-                        <span className="font-medium">{patient.emergencyContact.relationship}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Phone</span>
-                        <span className="font-medium">{patient.emergencyContact.phone}</span>
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -238,48 +246,69 @@ const PatientProfile = () => {
               {/* Add Vital Reading */}
               <AddVitalReadingForm patientId={patient.id} onSuccess={handleUpdate} />
 
-              {/* Vital Signs Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {vitals.length === 0 ? (
                 <Card className="medical-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold">Heart Rate & O2</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <VitalsChart 
-                      vitals={vitals} 
-                      dataKeys={['heartRate', 'oxygenSaturation']}
-                      height={240}
-                    />
+                  <CardContent className="py-12 text-center">
+                    <p className="text-sm text-muted-foreground">No vital signs recorded yet</p>
+                    <p className="text-xs text-muted-foreground mt-2">Add a reading above to start tracking vitals</p>
                   </CardContent>
                 </Card>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <Card className="medical-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold">Heart Rate & O2</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <VitalsChart 
+                        vitals={vitals} 
+                        dataKeys={['heartRate', 'oxygenSaturation']}
+                        height={240}
+                      />
+                    </CardContent>
+                  </Card>
 
-                <Card className="medical-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold">Blood Pressure</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <VitalsChart 
-                      vitals={vitals} 
-                      dataKeys={['systolic', 'diastolic']}
-                      height={240}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+                  <Card className="medical-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold">Blood Pressure</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <VitalsChart 
+                        vitals={vitals} 
+                        dataKeys={['systolic', 'diastolic']}
+                        height={240}
+                      />
+                    </CardContent>
+                  </Card>
 
-              {vitals.some(v => v.bloodGlucose) && (
-                <Card className="medical-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold">Blood Glucose</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <VitalsChart 
-                      vitals={vitals.filter(v => v.bloodGlucose).map(v => ({ ...v, glucose: v.bloodGlucose }))} 
-                      dataKeys={['glucose']}
-                      height={240}
-                    />
-                  </CardContent>
-                </Card>
+                  <Card className="medical-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold">Temperature</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <VitalsChart 
+                        vitals={vitals} 
+                        dataKeys={['temperature']}
+                        height={240}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {vitals.some(v => v.bloodGlucose) && (
+                    <Card className="medical-card">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold">Blood Glucose</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <VitalsChart 
+                          vitals={vitals} 
+                          dataKeys={['bloodGlucose']}
+                          height={240}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               )}
             </TabsContent>
 

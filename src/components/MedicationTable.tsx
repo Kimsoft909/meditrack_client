@@ -178,9 +178,9 @@ export const MedicationTable = memo(({ patientId, patient, medications, onUpdate
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRefillClick(med)}>
+                        <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed">
                           <RefreshCw className="h-4 w-4 mr-2" />
-                          Extend Duration
+                          Extend Duration (Disabled)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDiscontinue(med)} className="text-destructive">
                           <StopCircle className="h-4 w-4 mr-2" />

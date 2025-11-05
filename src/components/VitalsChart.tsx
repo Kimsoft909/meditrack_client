@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Vitals } from '@/types/patient';
 import { format } from 'date-fns';
 
-type ChartDataKey = 'heartRate' | 'oxygenSaturation' | 'temperature' | 'systolic' | 'diastolic' | 'glucose';
+type ChartDataKey = 'heartRate' | 'oxygenSaturation' | 'temperature' | 'systolic' | 'diastolic' | 'glucose' | 'bloodGlucose';
 
 interface VitalsChartProps {
   vitals: Vitals[];
@@ -17,17 +17,20 @@ interface VitalsChartProps {
 export const VitalsChart = memo(({ vitals, dataKeys = ['heartRate', 'oxygenSaturation'], height = 300 }: VitalsChartProps) => {
   // Transform vitals data for recharts with memoization for performance
   const chartData = useMemo(() => {
+    if (!vitals || vitals.length === 0) return [];
+    
     return vitals
       .slice(0, 14) // Last 14 readings for clarity
       .reverse()
       .map((vital) => ({
-        date: format(vital.timestamp, 'MM/dd'),
+        date: format(new Date(vital.timestamp), 'MM/dd'),
         heartRate: vital.heartRate,
         oxygenSaturation: vital.oxygenSaturation,
         temperature: vital.temperature,
         systolic: vital.bloodPressureSystolic,
         diastolic: vital.bloodPressureDiastolic,
         glucose: vital.bloodGlucose,
+        bloodGlucose: vital.bloodGlucose,
       }));
   }, [vitals]);
 
@@ -38,6 +41,7 @@ export const VitalsChart = memo(({ vitals, dataKeys = ['heartRate', 'oxygenSatur
     systolic: { stroke: 'hsl(var(--destructive))', name: 'Systolic (mmHg)' },
     diastolic: { stroke: 'hsl(var(--success))', name: 'Diastolic (mmHg)' },
     glucose: { stroke: 'hsl(var(--accent-foreground))', name: 'Glucose (mg/dL)' },
+    bloodGlucose: { stroke: 'hsl(var(--accent-foreground))', name: 'Blood Glucose (mg/dL)' },
   };
 
   return (
