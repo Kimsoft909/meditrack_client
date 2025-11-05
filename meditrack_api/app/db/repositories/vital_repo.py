@@ -92,6 +92,72 @@ class VitalRepository(BaseRepository[Vital]):
         
         return list(result.scalars().all())
     
+    async def get_vitals_by_date_range(
+        self,
+        patient_id: str,
+        days: int = 7
+    ) -> List[Vital]:
+        """
+        Get vitals within the last N days for charting.
+        
+        Args:
+            patient_id: Patient ID
+            days: Number of days to look back
+        
+        Returns:
+            List of vitals ordered by timestamp ascending
+        """
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        
+        result = await self.db.execute(
+            select(Vital)
+            .where(
+                and_(
+                    Vital.patient_id == patient_id,
+                    Vital.timestamp >= cutoff
+                )
+            )
+            .order_by(Vital.timestamp.asc())
+        )
+        
+        return list(result.scalars().all())
+    
+    async def get_trends_with_stats(
+        self,
+        patient_id: str,
+        days: int = 7
+    ) -> Dict[str, Any]:
+        """
+        Get comprehensive trend statistics for all vitals.
+        
+        Args:
+            patient_id: Patient ID
+            days: Number of days to look back
+        
+        Returns:
+            Dictionary with trends, averages, and date range
+        """
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        now = datetime.utcnow()
+        
+        # Get averages
+        averages = await self.calculate_vital_averages(patient_id, days)
+        
+        # Get all vitals in range for trend calculation
+        vitals = await self.get_vitals_by_date_range(patient_id, days)
+        
+        # Build trends for each parameter
+        trends = []
+        
+        return {
+            "date_range": {
+                "from": cutoff.isoformat(),
+                "to": now.isoformat()
+            },
+            "trends": trends,
+            "averages": averages
+        }
+    
     async def calculate_average_bp(
         self,
         patient_id: str,
@@ -165,7 +231,7 @@ class VitalRepository(BaseRepository[Vital]):
                 func.avg(Vital.temperature).label("avg_temperature"),
                 func.avg(Vital.respiratory_rate).label("avg_respiratory_rate"),
                 func.avg(Vital.oxygen_saturation).label("avg_oxygen_saturation"),
-                func.avg(Vital.glucose_level).label("avg_glucose")
+                func.avg(Vital.blood_glucose).label("avg_glucose")
             )
             .where(
                 and_(

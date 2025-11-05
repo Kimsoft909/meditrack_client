@@ -40,7 +40,7 @@ class VitalService:
             temperature=vital_data.temperature,
             respiratory_rate=vital_data.respiratory_rate,
             oxygen_saturation=vital_data.oxygen_saturation,
-            glucose_level=vital_data.glucose_level,
+            blood_glucose=vital_data.blood_glucose,
             timestamp=datetime.utcnow(),
             notes=vital_data.notes
         )
@@ -53,7 +53,7 @@ class VitalService:
     
     async def get_patient_vitals(self, patient_id: str, limit: int = 50) -> List[VitalResponse]:
         """Get recent vital signs for a patient using repository."""
-        vitals = await self.vital_repo.get_recent_vitals(patient_id, limit=limit)
+        vitals = await self.vital_repo.get_latest_vitals(patient_id, limit=limit)
         return [VitalResponse.model_validate(v) for v in vitals]
     
     async def get_trends(self, patient_id: str, days: int = 7) -> VitalTrendResponse:
@@ -96,7 +96,7 @@ class VitalService:
             "heart_rate": [v.heart_rate for v in vitals],
             "temperature": [v.temperature for v in vitals],
             "oxygen_saturation": [v.oxygen_saturation for v in vitals],
-            "glucose_level": [v.glucose_level for v in vitals if v.glucose_level]
+            "blood_glucose": [v.blood_glucose for v in vitals if v.blood_glucose]
         }
         
         date_range = {

@@ -105,5 +105,4 @@ class VitalsChartResponse(BaseModel):
 
     patient_id: str
     date_range: dict
-    vitals: List[VitalResponse]
-    trends: List[VitalTrendResponse]
+    data: dict
