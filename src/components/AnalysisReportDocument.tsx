@@ -221,7 +221,7 @@ export function AnalysisReportDocument({ report }: AnalysisReportDocumentProps) 
             </div>
           </div>
 
-          {report.sections.riskAssessment.riskFactors.length > 0 && (
+          {report.sections.riskAssessment.riskFactors && report.sections.riskAssessment.riskFactors.length > 0 && (
             <div className="mb-4">
               <h4 className="font-semibold text-sm mb-2">Identified Risk Factors:</h4>
               <ul className="list-disc list-inside text-sm space-y-1">
