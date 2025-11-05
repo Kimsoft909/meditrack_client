@@ -48,6 +48,11 @@ export const API_ENDPOINTS = {
     checkInteractions: `${API_BASE_URL}/api/v1/drugs/check-interactions`,
     fdaInfo: (drugId: string) => `${API_BASE_URL}/api/v1/drugs/fda-info/${drugId}`,
   },
-  dashboard: `${API_BASE_URL}/api/v1/dashboard`,
+  dashboard: {
+    stats: `${API_BASE_URL}/api/v1/dashboard/stats`,
+    kpis: `${API_BASE_URL}/api/v1/dashboard/kpis`,
+    riskDistribution: `${API_BASE_URL}/api/v1/dashboard/risk-distribution`,
+    vitalsTrends: `${API_BASE_URL}/api/v1/dashboard/vitals-trends`,
+  },
   settings: `${API_BASE_URL}/api/v1/settings`,
 };

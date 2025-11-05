@@ -1,7 +1,9 @@
-// Global settings context with localStorage persistence
+// Global settings context with localStorage persistence and backend sync
 
-import React, { createContext, useContext, useEffect, useReducer, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useCallback, useMemo, useRef } from 'react';
 import { AppSettings, DEFAULT_SETTINGS, FontFamily, FontSize, ThemeMode, FONT_SIZE_SCALES } from '@/types/settings';
+import { settingsService, BackendSettingsUpdate } from '@/services/settingsService';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY = 'meditrack_settings';
 
@@ -76,12 +78,83 @@ function applyFontSettings(fontFamily: FontFamily, fontSize: FontSize): void {
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS, loadSettings);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true);
 
+  // Fetch settings from backend on mount
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const fetchBackendSettings = async () => {
+      try {
+        logger.debug('Fetching settings from backend');
+        const backendSettings = await settingsService.getSettings();
+
+        // Transform backend settings to frontend format
+        const frontendSettings: AppSettings = {
+          typography: {
+            fontFamily: backendSettings.font_family as FontFamily,
+            fontSize: backendSettings.font_size as FontSize,
+          },
+          theme: backendSettings.theme as ThemeMode,
+          notifications: {
+            inApp: backendSettings.push_notifications,
+            email: backendSettings.email_notifications,
+          },
+        };
+
+        dispatch({ type: 'SET_SETTINGS', payload: frontendSettings });
+        saveSettings(frontendSettings);
+        logger.info('Settings loaded from backend');
+      } catch (error) {
+        logger.error('Failed to fetch backend settings, using local storage', error);
+        // Continue with local storage settings if backend fails
+      }
+    };
+
+    fetchBackendSettings();
+  }, []);
+
+  // Debounced save to localStorage and backend
+  useEffect(() => {
+    // Skip saving on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce save operations
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Save to localStorage immediately
       saveSettings(settings);
-    }, 300);
-    return () => clearTimeout(timeoutId);
+
+      // Save to backend
+      try {
+        logger.debug('Syncing settings to backend');
+        const backendUpdate: BackendSettingsUpdate = {
+          theme: settings.theme,
+          font_family: settings.typography.fontFamily,
+          font_size: settings.typography.fontSize,
+          email_notifications: settings.notifications.email,
+          push_notifications: settings.notifications.inApp,
+        };
+
+        await settingsService.updateSettings(backendUpdate);
+        logger.info('Settings synced to backend');
+      } catch (error) {
+        logger.error('Failed to sync settings to backend', error);
+        // Continue with local storage even if backend sync fails
+      }
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [settings]);
 
   useEffect(() => {

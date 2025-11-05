@@ -59,3 +59,25 @@ export const FONT_SIZE_SCALES: Record<FontSize, number> = {
   [FontSize.MEDIUM]: 1,
   [FontSize.LARGE]: 1.125,
 };
+
+// Backend settings interfaces (matching API schema)
+export interface BackendUserSettings {
+  theme: string;
+  font_family: string;
+  font_size: string;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  critical_alerts_only: boolean;
+  dashboard_layout: any | null;
+}
+
+export interface BackendSettingsUpdate {
+  theme?: string;
+  font_family?: string;
+  font_size?: string;
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  critical_alerts_only?: boolean;
+  dashboard_layout?: any;
+}
+

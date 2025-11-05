@@ -10,14 +10,22 @@ import { toast } from 'sonner';
 export const NotificationSettings = React.memo(() => {
   const { settings, updateNotifications } = useSettings();
 
-  const handleInAppChange = useCallback((checked: boolean) => {
-    updateNotifications({ inApp: checked });
-    toast.success(checked ? 'In-app notifications enabled' : 'In-app notifications disabled');
+  const handleInAppChange = useCallback(async (checked: boolean) => {
+    try {
+      updateNotifications({ inApp: checked });
+      toast.success(checked ? 'In-app notifications enabled' : 'In-app notifications disabled');
+    } catch (error) {
+      toast.error('Failed to update notification settings');
+    }
   }, [updateNotifications]);
 
-  const handleEmailChange = useCallback((checked: boolean) => {
-    updateNotifications({ email: checked });
-    toast.success(checked ? 'Email notifications enabled' : 'Email notifications disabled');
+  const handleEmailChange = useCallback(async (checked: boolean) => {
+    try {
+      updateNotifications({ email: checked });
+      toast.success(checked ? 'Email notifications enabled' : 'Email notifications disabled');
+    } catch (error) {
+      toast.error('Failed to update notification settings');
+    }
   }, [updateNotifications]);
 
   return (
