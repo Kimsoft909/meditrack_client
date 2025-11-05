@@ -46,8 +46,9 @@ const AIChat = React.memo(() => {
   useEffect(() => {
     const loadHistory = async () => {
       try {
+        // Fetch ALL user messages, not filtered by conversation_id
+        // This ensures history persists across page reloads
         const history = await chatService.getHistory({ 
-          conversation_id: conversationId,
           limit: 50 
         });
         
@@ -75,7 +76,7 @@ const AIChat = React.memo(() => {
     };
     
     loadHistory();
-  }, [conversationId]);
+  }, []); // Only load once on mount, not when conversationId changes
 
   useEffect(() => {
     scrollToBottom();
@@ -214,21 +215,23 @@ const AIChat = React.memo(() => {
                   </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="h-[500px] pr-4">
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className="rounded-lg border p-3 space-y-2"
+                        className="rounded-lg border p-3 space-y-2 break-words"
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-xs font-medium text-muted-foreground">
                             {message.role === 'user' ? 'You' : 'AI Assistant'}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[10px] text-muted-foreground shrink-0">
                             {new Date(message.created_at).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere max-w-full">
+                          {message.content}
+                        </p>
                       </div>
                     ))}
                   </div>
