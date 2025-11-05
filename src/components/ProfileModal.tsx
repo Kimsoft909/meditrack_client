@@ -32,7 +32,10 @@ export const ProfileModal = React.memo<ProfileModalProps>(({ onClose }) => {
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12 border-2 border-primary/20">
-            <AvatarImage src={user?.avatar_url || undefined} />
+            <AvatarImage 
+              src={user?.avatar_url || undefined} 
+              className="object-cover object-center"
+            />
             <AvatarFallback className="bg-gradient-to-br from-primary to-primary-hover text-primary-foreground text-sm font-semibold">
               {user?.username?.substring(0, 2).toUpperCase() || 'DR'}
             </AvatarFallback>

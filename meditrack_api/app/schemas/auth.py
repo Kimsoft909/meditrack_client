@@ -102,6 +102,12 @@ class AvatarUploadResponse(BaseModel):
     message: str
 
 
+class RefreshTokenRequest(BaseModel):
+    """Refresh token request payload."""
+
+    refresh_token: str = Field(..., min_length=1)
+
+
 class TokenResponse(BaseModel):
     """JWT token response."""
 

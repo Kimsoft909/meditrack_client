@@ -39,7 +39,21 @@ class HttpClient {
       // Handle error responses
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}`;
+        
+        // Handle Pydantic validation errors (array of error objects)
+        let errorMessage: string;
+        if (Array.isArray(errorData.detail)) {
+          // Extract error messages from Pydantic validation errors
+          errorMessage = errorData.detail
+            .map((err: any) => err.msg || err.message || String(err))
+            .join(', ');
+        } else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else {
+          errorMessage = `HTTP ${response.status}`;
+        }
         
         logger.error(`HTTP Error: ${response.status} - ${errorMessage}`);
         throw new Error(errorMessage);

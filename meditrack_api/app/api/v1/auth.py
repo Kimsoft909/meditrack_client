@@ -15,6 +15,7 @@ from app.schemas.auth import (
     PasswordChangeRequest,
     PasswordChangeResponse,
     ProfileUpdateRequest,
+    RefreshTokenRequest,
     SignupRequest,
     TokenResponse,
     UserProfile,
@@ -65,12 +66,12 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(
-    refresh_token: str,
+    request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """Generate new access token using refresh token."""
     service = AuthService(db)
-    return await service.refresh_access_token(refresh_token)
+    return await service.refresh_access_token(request.refresh_token)
 
 
 @router.post("/logout")
