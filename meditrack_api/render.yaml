@@ -1,0 +1,115 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: meditrack-postgres
+    env: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile.postgres
+    envVars:
+      - key: POSTGRES_DB
+        value: meditrack_db
+      - key: POSTGRES_USER
+        value: meditrack_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    disk:
+      name: meditrack-postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+
+  # Redis Cache
+  - type: redis
+    name: meditrack-redis
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # FastAPI Web Service
+  - type: web
+    name: meditrack-api
+    env: python
+    region: oregon
+    plan: starter
+    branch: main
+    buildCommand: |
+      cd meditrack_api &&
+      pip install --upgrade pip &&
+      pip install -r requirements.txt &&
+      alembic upgrade head
+    startCommand: |
+      cd meditrack_api &&
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /health
+    envVars:
+      # App Configuration
+      - key: APP_NAME
+        value: MEDITRACK API
+      - key: VERSION
+        value: 1.0.0
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      
+      # Security
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      
+      # Database (auto-connected to PostgreSQL service)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: meditrack-postgres
+          property: connectionString
+      
+      # Redis (auto-connected to Redis service)
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: meditrack-redis
+          property: connectionString
+      
+      # CORS Origins (update with your frontend URL)
+      - key: CORS_ORIGINS
+        value: https://your-frontend-app.onrender.com,http://localhost:8080,http://localhost:5173
+      
+      # Database Connection Pool
+      - key: DB_POOL_SIZE
+        value: 20
+      - key: DB_MAX_OVERFLOW
+        value: 40
+      
+      # Rate Limiting
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 60
+      
+      # File Upload
+      - key: MAX_UPLOAD_SIZE
+        value: 5242880
+      - key: UPLOAD_DIR
+        value: /opt/render/project/src/meditrack_api/uploads
+      
+      # AI Integration (add your API keys)
+      - key: GROK_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      
+      # FDA API
+      - key: FDA_API_BASE_URL
+        value: https://api.fda.gov/drug
+      
+      # Logging
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_FORMAT
+        value: json
