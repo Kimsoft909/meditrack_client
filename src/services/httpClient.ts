@@ -45,6 +45,18 @@ class HttpClient {
         throw new Error(errorMessage);
       }
 
+      // Handle 204 No Content - no body to parse
+      if (response.status === 204) {
+        return null as T;
+      }
+
+      // Check if response has content before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        // If not JSON, return empty response for successful requests
+        return null as T;
+      }
+
       // Parse JSON response
       const data = await response.json();
       return data as T;
