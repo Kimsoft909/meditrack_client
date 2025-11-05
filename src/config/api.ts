@@ -39,6 +39,7 @@ export const API_ENDPOINTS = {
     generate: `${API_BASE_URL}/api/v1/ai-analysis/generate`,
     getReport: (reportId: string) => `${API_BASE_URL}/api/v1/ai-analysis/${reportId}`,
     exportPDF: (reportId: string) => `${API_BASE_URL}/api/v1/ai-analysis/${reportId}/export/pdf`,
+    listReports: `${API_BASE_URL}/api/v1/ai-analysis/reports`,
   },
   drugChecker: `${API_BASE_URL}/api/v1/drugs`,
   chat: {

@@ -63,7 +63,7 @@ export function ReportExportDialog({ reportId }: ReportExportDialogProps) {
             ) : (
               <>
                 <FileText className="h-4 w-4 mr-2" />
-                Download as PDF (Backend)
+                Download as PDF
               </>
             )}
           </Button>

@@ -196,20 +196,12 @@ export const aiAnalysisService = {
     logger.debug('Exporting report as PDF', { reportId });
 
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(
-        `${API_ENDPOINTS.aiAnalysis.exportPDF(reportId)}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await httpClient.getBlob(
+        `/api/v1/ai-analysis/${reportId}/export/pdf`,
+        true
       );
 
-      if (!response.ok) {
-        throw new Error('PDF export failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(response);
       const a = document.createElement('a');
       a.href = url;
       a.download = `analysis_${reportId}.pdf`;
@@ -223,5 +215,20 @@ export const aiAnalysisService = {
       logger.error('PDF export failed', { reportId, error });
       throw error;
     }
+  },
+
+  /**
+   * List all saved reports for current user
+   */
+  async listReports(): Promise<AnalysisReport[]> {
+    logger.debug('Fetching report list');
+
+    const response = await httpClient.get<BackendAnalysisResponse[]>(
+      '/api/v1/ai-analysis/reports',
+      true
+    );
+
+    logger.info('Report list fetched', { count: response.length });
+    return response.map(transformAnalysisReport);
   },
 };

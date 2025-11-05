@@ -104,6 +104,41 @@ class HttpClient {
     return this.request<T>(url, { method: 'DELETE', requiresAuth });
   }
 
+  // Special method for blob responses (PDF downloads)
+  async getBlob(url: string, requiresAuth: boolean = false): Promise<Blob> {
+    const requestHeaders: HeadersInit = {};
+
+    if (requiresAuth) {
+      const token = tokenStorage.getAccessToken();
+      if (token) {
+        requestHeaders['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
+    try {
+      logger.debug(`HTTP GET (Blob) ${fullUrl}`);
+      
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: requestHeaders,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.detail || `HTTP ${response.status}`;
+        logger.error(`HTTP Error: ${response.status} - ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
+
+      return await response.blob();
+    } catch (error: any) {
+      logger.error('Blob download failed', error);
+      throw error;
+    }
+  }
+
   // Special method for multipart/form-data (avatar upload)
   async postFormData<T>(url: string, formData: FormData, requiresAuth: boolean = true): Promise<T> {
     const token = tokenStorage.getAccessToken();

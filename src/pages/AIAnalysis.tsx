@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnalysisConfigPanel } from '@/components/AnalysisConfigPanel';
 import { AnalysisReportDocument } from '@/components/AnalysisReportDocument';
 import { ReportExportDialog } from '@/components/ReportExportDialog';
+import { PreviousReportsDialog } from '@/components/PreviousReportsDialog';
 import { aiAnalysisService } from '@/services/aiAnalysisService';
 import { Brain } from 'lucide-react';
 import type { AnalysisReport, AnalysisOptions } from '@/types/analysis';
@@ -44,11 +45,12 @@ export default function AIAnalysis() {
             Generate comprehensive patient analysis reports powered by AI
           </p>
         </div>
-        {generatedReport && (
-          <div className="flex-shrink-0">
+        <div className="flex gap-2">
+          <PreviousReportsDialog />
+          {generatedReport && (
             <ReportExportDialog reportId={generatedReport.reportId} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-12rem)] overflow-hidden">
