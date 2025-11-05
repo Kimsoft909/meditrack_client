@@ -35,7 +35,11 @@ export const API_ENDPOINTS = {
     create: (patientId: string) => `${API_BASE_URL}/api/v1/visits/patients/${patientId}/visits`,
     list: (patientId: string) => `${API_BASE_URL}/api/v1/visits/patients/${patientId}/visits`,
   },
-  aiAnalysis: `${API_BASE_URL}/api/v1/ai-analysis`,
+  aiAnalysis: {
+    generate: `${API_BASE_URL}/api/v1/ai-analysis/generate`,
+    getReport: (reportId: string) => `${API_BASE_URL}/api/v1/ai-analysis/${reportId}`,
+    exportPDF: (reportId: string) => `${API_BASE_URL}/api/v1/ai-analysis/${reportId}/export/pdf`,
+  },
   drugChecker: `${API_BASE_URL}/api/v1/drugs`,
   chat: {
     send: `${API_BASE_URL}/api/v1/chat/send`,

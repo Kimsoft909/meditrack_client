@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnalysisConfigPanel } from '@/components/AnalysisConfigPanel';
 import { AnalysisReportDocument } from '@/components/AnalysisReportDocument';
 import { ReportExportDialog } from '@/components/ReportExportDialog';
-import { generatePatientAnalysis } from '@/services/analysisService';
+import { aiAnalysisService } from '@/services/aiAnalysisService';
 import { Brain } from 'lucide-react';
 import type { AnalysisReport, AnalysisOptions } from '@/types/analysis';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ export default function AIAnalysis() {
   ) => {
     setIsGenerating(true);
     try {
-      const report = await generatePatientAnalysis(patientId, dateRange, options);
+      const report = await aiAnalysisService.generateAnalysis(patientId, dateRange, options);
       setGeneratedReport(report);
       toast.success('Analysis report generated successfully');
     } catch (error) {
