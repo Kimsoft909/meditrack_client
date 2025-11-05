@@ -363,6 +363,16 @@ Focus on clinical significance and actionable insights. Use professional medical
         )
         patient = patient_result.scalar_one()
         
+        # Safely access metadata JSON column (avoid SQLAlchemy's class metadata attribute)
+        metadata_value = analysis.__dict__.get('metadata', {})
+        if not isinstance(metadata_value, dict):
+            metadata_value = {}
+        
+        # Safely access sections JSON column
+        sections_value = analysis.__dict__.get('sections', {})
+        if not isinstance(sections_value, dict):
+            sections_value = {}
+        
         return AnalysisReportResponse(
             report_id=analysis.report_id,
             patient=PatientSummary(
@@ -374,12 +384,12 @@ Focus on clinical significance and actionable insights. Use professional medical
                 risk_level=patient.risk_level
             ),
             report_date=analysis.report_date,
-            analysis_date_range=analysis.metadata.get("analysis_date_range", {}) if analysis.metadata else {},
+            analysis_date_range=metadata_value.get("analysis_date_range", {}),
             generated_by=analysis.generated_by,
             executive_summary=analysis.executive_summary,
             overall_health_score=analysis.overall_health_score,
-            sections=analysis.sections,
-            metadata=analysis.metadata or {}
+            sections=sections_value,
+            metadata=metadata_value
         )
     
     async def export_report_pdf(self, report_id: str) -> bytes:
