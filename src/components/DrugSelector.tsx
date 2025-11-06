@@ -125,10 +125,10 @@ export function DrugSelector({ selectedDrugs, onAddDrug, onRemoveDrug }: DrugSel
         {showSuggestions && !isSearching && searchResults.length > 0 && (
           <div
             id="drug-suggestions"
-            className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-lg"
+            className="absolute z-50 w-full mt-2 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
             role="listbox"
           >
-            <ScrollArea className="max-h-64">
+            <ScrollArea className="max-h-64 overflow-y-auto">
               <div className="p-2 space-y-1">
                 {searchResults.map((drug, index) => (
                   <button
