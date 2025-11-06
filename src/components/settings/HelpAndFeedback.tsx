@@ -5,12 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { FeedbackDialog } from './FeedbackDialog';
-import { BookOpen, Video, FileText, MessageSquare, Mail, ExternalLink } from 'lucide-react';
+import { BookOpen, Video, FileText, MessageSquare, Mail, ExternalLink, Rocket, BarChart3, User, Lightbulb, Search, ClipboardList, Pill, AlertTriangle, Bot, MessageCircle, Target, Stethoscope, AlertCircle, Settings as SettingsIcon, Palette, Tag, Upload, Keyboard, Smartphone, Lock } from 'lucide-react';
 
 const USER_GUIDES = [
   {
     id: 'getting-started',
-    title: '🚀 Getting Started with MediTrack',
+    title: (
+      <span className="flex items-center gap-2">
+        <Rocket className="h-4 w-4" />
+        Getting Started with MediTrack
+      </span>
+    ),
     content: (
       <div className="space-y-4">
         <p className="text-sm leading-relaxed">
@@ -20,7 +25,8 @@ const USER_GUIDES = [
         
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📊</span> Understanding Your Dashboard
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            Understanding Your Dashboard
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Your dashboard is mission control. At the top, you'll see four key metrics that matter most:
@@ -35,7 +41,8 @@ const USER_GUIDES = [
 
         <div className="space-y-2">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">👤</span> Adding Your First Patient
+            <User className="h-3.5 w-3.5 text-primary" />
+            Adding Your First Patient
           </h4>
           <ol className="text-xs space-y-1.5 ml-4 text-muted-foreground list-decimal">
             <li>Click the <strong className="text-foreground">"Patients"</strong> tab in the sidebar</li>
@@ -47,7 +54,10 @@ const USER_GUIDES = [
 
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
           <p className="text-xs text-foreground">
-            <strong>💡 Pro Tip:</strong> Start with one or two patients to familiarize yourself. You'll quickly see how everything connects—vitals, medications, visits, and AI insights all in one place.
+            <strong className="inline-flex items-center gap-1">
+              <Lightbulb className="h-3.5 w-3.5" />
+              Pro Tip:
+            </strong> Start with one or two patients to familiarize yourself. You'll quickly see how everything connects—vitals, medications, visits, and AI insights all in one place.
           </p>
         </div>
       </div>
@@ -55,12 +65,18 @@ const USER_GUIDES = [
   },
   {
     id: 'managing-patients',
-    title: '👥 Managing Patients & Clinical Data',
+    title: (
+      <span className="flex items-center gap-2">
+        <ClipboardList className="h-4 w-4" />
+        Managing Patients & Clinical Data
+      </span>
+    ),
     content: (
       <div className="space-y-4">
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">🔍</span> Finding & Organizing Patients
+            <Search className="h-3.5 w-3.5 text-primary" />
+            Finding & Organizing Patients
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             The patient directory is your searchable database. Use the search bar to find patients by name, or filter by status (Active, Inactive) 
@@ -70,7 +86,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📋</span> Patient Profile Tabs
+            <ClipboardList className="h-3.5 w-3.5 text-primary" />
+            Patient Profile Tabs
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Each patient profile has four tabs that tell the complete story:
@@ -97,7 +114,8 @@ const USER_GUIDES = [
 
         <div className="space-y-2">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">💊</span> Recording Vital Signs
+            <Pill className="h-3.5 w-3.5 text-primary" />
+            Recording Vital Signs
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Click <strong className="text-foreground">"Add Reading"</strong> in the Vitals tab. Enter measurements, and MediTrack automatically 
@@ -107,7 +125,10 @@ const USER_GUIDES = [
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
           <p className="text-xs text-foreground">
-            <strong>⚠️ Best Practice:</strong> Always document allergies and chronic conditions upfront. This information feeds into the AI analysis 
+            <strong className="inline-flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Best Practice:
+            </strong> Always document allergies and chronic conditions upfront. This information feeds into the AI analysis
             and drug interaction checker, helping you avoid potentially dangerous prescribing errors.
           </p>
         </div>
@@ -116,12 +137,18 @@ const USER_GUIDES = [
   },
   {
     id: 'ai-tools',
-    title: '🤖 AI-Powered Clinical Tools',
+    title: (
+      <span className="flex items-center gap-2">
+        <Bot className="h-4 w-4" />
+        AI-Powered Clinical Tools
+      </span>
+    ),
     content: (
       <div className="space-y-4">
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📊</span> AI Clinical Analysis
+            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+            AI Clinical Analysis
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Generate comprehensive, evidence-based reports in seconds. The AI analyzes vitals trends, medication regimens, visit history, 
@@ -142,7 +169,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">💬</span> AI Medical Assistant (Chat)
+            <MessageCircle className="h-3.5 w-3.5 text-primary" />
+            AI Medical Assistant (Chat)
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Think of this as having a medical reference at your fingertips. Ask about drug mechanisms, differential diagnoses, 
@@ -161,7 +189,10 @@ const USER_GUIDES = [
 
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
           <p className="text-xs text-foreground">
-            <strong>🎯 Remember:</strong> AI is a powerful assistant, but it's not a replacement for your clinical judgment. 
+            <strong className="inline-flex items-center gap-1">
+              <Target className="h-3.5 w-3.5" />
+              Remember:
+            </strong> AI is a powerful assistant, but it's not a replacement for your clinical judgment.
             Always verify recommendations, consider patient-specific factors (age, comorbidities, preferences), and consult 
             authoritative sources for prescribing decisions. You're the doctor—AI just helps you work smarter.
           </p>
@@ -171,12 +202,18 @@ const USER_GUIDES = [
   },
   {
     id: 'drug-safety',
-    title: '💊 Drug Safety & Interaction Checker',
+    title: (
+      <span className="flex items-center gap-2">
+        <Pill className="h-4 w-4" />
+        Drug Safety & Interaction Checker
+      </span>
+    ),
     content: (
       <div className="space-y-4">
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">⚕️</span> Checking Drug Interactions
+            <Stethoscope className="h-3.5 w-3.5 text-primary" />
+            Checking Drug Interactions
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Before prescribing, always check for interactions. This tool analyzes drug-drug interactions based on clinical databases 
@@ -195,7 +232,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">🚨</span> Understanding Severity Levels
+            <AlertCircle className="h-3.5 w-3.5 text-primary" />
+            Understanding Severity Levels
           </h4>
           <ul className="text-xs space-y-2 ml-4 text-muted-foreground">
             <li>
@@ -218,7 +256,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📖</span> FDA Drug Lookup
+            <BookOpen className="h-3.5 w-3.5 text-primary" />
+            FDA Drug Lookup
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Switch to the <strong className="text-foreground">"Drug Lookup"</strong> tab to search the FDA database. 
@@ -229,7 +268,10 @@ const USER_GUIDES = [
 
         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
           <p className="text-xs text-foreground">
-            <strong>⚠️ Clinical Decision Support:</strong> This tool provides evidence-based guidance, but it's not exhaustive. 
+            <strong className="inline-flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Clinical Decision Support:
+            </strong> This tool provides evidence-based guidance, but it's not exhaustive.
             Always consider patient-specific factors: age, renal/hepatic function, pregnancy status, pharmacogenomics. 
             When in doubt, consult a pharmacist or specialist. Your clinical judgment is irreplaceable.
           </p>
@@ -239,12 +281,18 @@ const USER_GUIDES = [
   },
   {
     id: 'advanced-features',
-    title: '⚙️ Advanced Features & Customization',
+    title: (
+      <span className="flex items-center gap-2">
+        <SettingsIcon className="h-4 w-4" />
+        Advanced Features & Customization
+      </span>
+    ),
     content: (
       <div className="space-y-4">
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">🎨</span> Personalizing Your Experience
+            <Palette className="h-3.5 w-3.5 text-primary" />
+            Personalizing Your Experience
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             MediTrack adapts to your preferences. Go to <strong className="text-foreground">Settings</strong> to customize:
@@ -259,7 +307,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">🏷️</span> Understanding Risk Levels
+            <Tag className="h-3.5 w-3.5 text-primary" />
+            Understanding Risk Levels
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             MediTrack automatically calculates patient risk based on vitals, medications, chronic conditions, and recent changes:
@@ -274,7 +323,8 @@ const USER_GUIDES = [
 
         <div className="space-y-3">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📤</span> Exporting & Sharing
+            <Upload className="h-3.5 w-3.5 text-primary" />
+            Exporting & Sharing
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             Export AI analysis reports as PDF (for printing/EMR) or DOCX (for editing). Perfect for referral letters, 
@@ -284,7 +334,8 @@ const USER_GUIDES = [
 
         <div className="space-y-2">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">⌨️</span> Keyboard Shortcuts
+            <Keyboard className="h-3.5 w-3.5 text-primary" />
+            Keyboard Shortcuts
           </h4>
           <ul className="text-xs space-y-1 ml-4 text-muted-foreground list-disc">
             <li><strong className="text-foreground">Ctrl+Enter:</strong> Quick-check interactions in Drug Checker</li>
@@ -293,7 +344,8 @@ const USER_GUIDES = [
 
         <div className="space-y-2">
           <h4 className="font-semibold text-sm flex items-center gap-2">
-            <span className="text-primary">📱</span> Mobile vs Desktop
+            <Smartphone className="h-3.5 w-3.5 text-primary" />
+            Mobile vs Desktop
           </h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
             MediTrack works on any device. The interface adapts: charts stack vertically on mobile, tables become scrollable, 
@@ -303,7 +355,10 @@ const USER_GUIDES = [
 
         <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
           <p className="text-xs text-foreground">
-            <strong>🔒 Your Data is Secure:</strong> All patient data is encrypted in transit and at rest. We follow HIPAA guidelines 
+            <strong className="inline-flex items-center gap-1">
+              <Lock className="h-3.5 w-3.5" />
+              Your Data is Secure:
+            </strong> All patient data is encrypted in transit and at rest. We follow HIPAA guidelines
             for data protection. You control access—no one sees your patient information without your permission.
           </p>
         </div>
