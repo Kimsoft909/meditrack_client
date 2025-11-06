@@ -1,9 +1,0 @@
-FROM postgres:16-alpine
-
-# Install extensions if needed
-RUN apk add --no-cache postgresql-contrib
-
-# Copy any initialization scripts (optional)
-# COPY ./init-scripts /docker-entrypoint-initdb.d/
-
-EXPOSE 5432
