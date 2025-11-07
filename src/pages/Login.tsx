@@ -37,10 +37,47 @@ export const Login = React.memo(() => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Intelligent toast timing for cold starts
+    let toast10s: string | number | undefined;
+    let toast30s: string | number | undefined;
+
+    const timer10s = setTimeout(() => {
+      toast10s = toast.loading(
+        <div className="flex flex-col gap-2 w-full">
+          <div className="text-sm font-medium">Waking up server, please wait...</div>
+          <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full animate-[shrink_20s_linear_forwards]" />
+          </div>
+        </div>,
+        { duration: 20000 }
+      );
+    }, 10000);
+
+    const timer30s = setTimeout(() => {
+      if (toast10s) toast.dismiss(toast10s);
+      toast30s = toast.loading(
+        <div className="flex flex-col gap-2 w-full">
+          <div className="text-sm font-medium">Almost there... (up to 60 seconds)</div>
+          <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full animate-[shrink_30s_linear_forwards]" />
+          </div>
+        </div>,
+        { duration: 30000 }
+      );
+    }, 30000);
+
     try {
       await login(formData);
       // AuthContext handles redirect to /dashboard
+      clearTimeout(timer10s);
+      clearTimeout(timer30s);
+      if (toast10s) toast.dismiss(toast10s);
+      if (toast30s) toast.dismiss(toast30s);
     } catch (error: any) {
+      clearTimeout(timer10s);
+      clearTimeout(timer30s);
+      if (toast10s) toast.dismiss(toast10s);
+      if (toast30s) toast.dismiss(toast30s);
       toast.error(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsSubmitting(false);
