@@ -129,6 +129,16 @@ All colors MUST be HSL.
     transition: font-family 0.2s ease, font-size 0.2s ease;
   }
 
+  /* Progress bar animation for toast notifications */
+  @keyframes shrink {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
+
   /* Document-Style Report Styling */
   .report-document {
     background: linear-gradient(to bottom, 
