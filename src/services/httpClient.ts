@@ -4,37 +4,55 @@ import { logger } from '@/utils/logger';
 
 interface RequestConfig extends RequestInit {
   requiresAuth?: boolean;
+  timeout?: number;
+  retryConfig?: {
+    maxRetries: number;
+    retryDelay: number;
+  };
 }
 
 class HttpClient {
-  private async request<T>(
+  private async requestWithTimeout<T>(
     url: string,
-    config: RequestConfig = {}
+    config: RequestConfig,
+    attemptNumber: number = 1
   ): Promise<T> {
-    const { requiresAuth = false, headers = {}, ...restConfig } = config;
+    const { 
+      requiresAuth = false, 
+      headers = {}, 
+      timeout = 60000, // Default 60s timeout
+      retryConfig,
+      ...restConfig 
+    } = config;
 
-    // Add auth header if required
-    const requestHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...headers,
-    };
-
-    if (requiresAuth) {
-      const token = tokenStorage.getAccessToken();
-      if (token) {
-        requestHeaders['Authorization'] = `Bearer ${token}`;
-      }
-    }
-
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      logger.debug(`HTTP ${config.method || 'GET'} ${fullUrl}`);
+      const requestHeaders: HeadersInit = {
+        'Content-Type': 'application/json',
+        ...headers,
+      };
+
+      if (requiresAuth) {
+        const token = tokenStorage.getAccessToken();
+        if (token) {
+          requestHeaders['Authorization'] = `Bearer ${token}`;
+        }
+      }
+
+      const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
+      logger.debug(`HTTP ${config.method || 'GET'} ${fullUrl} (attempt ${attemptNumber})`);
       
       const response = await fetch(fullUrl, {
         ...restConfig,
         headers: requestHeaders,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       // Handle error responses
       if (!response.ok) {
@@ -43,7 +61,6 @@ class HttpClient {
         // Handle Pydantic validation errors (array of error objects)
         let errorMessage: string;
         if (Array.isArray(errorData.detail)) {
-          // Extract error messages from Pydantic validation errors
           errorMessage = errorData.detail
             .map((err: any) => err.msg || err.message || String(err))
             .join(', ');
@@ -56,6 +73,15 @@ class HttpClient {
         }
         
         logger.error(`HTTP Error: ${response.status} - ${errorMessage}`);
+        
+        // Retry logic for 5xx errors and network failures
+        if (retryConfig && attemptNumber < retryConfig.maxRetries && response.status >= 500) {
+          const delay = retryConfig.retryDelay * Math.pow(2, attemptNumber - 1); // Exponential backoff
+          logger.info(`Retrying in ${delay}ms... (attempt ${attemptNumber + 1}/${retryConfig.maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.requestWithTimeout<T>(url, config, attemptNumber + 1);
+        }
+        
         throw new Error(errorMessage);
       }
 
@@ -67,28 +93,58 @@ class HttpClient {
       // Check if response has content before parsing
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        // If not JSON, return empty response for successful requests
         return null as T;
       }
 
-      // Parse JSON response
       const data = await response.json();
       return data as T;
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError') {
+        logger.error('Request timed out', error);
+        throw new Error('Server is taking longer than expected. Please try again.');
+      }
+      
+      // Retry logic for network failures
+      if (retryConfig && attemptNumber < retryConfig.maxRetries && 
+          (error.message.includes('fetch') || error.message.includes('network'))) {
+        const delay = retryConfig.retryDelay * Math.pow(2, attemptNumber - 1);
+        logger.info(`Network error, retrying in ${delay}ms... (attempt ${attemptNumber + 1}/${retryConfig.maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.requestWithTimeout<T>(url, config, attemptNumber + 1);
+      }
+      
       logger.error('HTTP request failed', error);
       throw error;
     }
   }
 
-  async get<T>(url: string, requiresAuth: boolean = false): Promise<T> {
-    return this.request<T>(url, { method: 'GET', requiresAuth });
+  private async request<T>(
+    url: string,
+    config: RequestConfig = {}
+  ): Promise<T> {
+    return this.requestWithTimeout<T>(url, config, 1);
   }
 
-  async post<T>(url: string, body: any, requiresAuth: boolean = false): Promise<T> {
+  async get<T>(url: string, requiresAuth: boolean = false, timeout?: number): Promise<T> {
+    return this.request<T>(url, { method: 'GET', requiresAuth, timeout });
+  }
+
+  async post<T>(
+    url: string, 
+    body: any, 
+    requiresAuth: boolean = false,
+    timeout?: number,
+    retryConfig?: { maxRetries: number; retryDelay: number }
+  ): Promise<T> {
     return this.request<T>(url, {
       method: 'POST',
       body: JSON.stringify(body),
       requiresAuth,
+      timeout,
+      retryConfig,
     });
   }
 
