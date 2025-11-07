@@ -18,7 +18,9 @@ export const authService = {
     const response = await httpClient.post<TokenResponse>(
       API_ENDPOINTS.auth.login,
       credentials,
-      false // No auth required for login
+      false, // No auth required for login
+      120000, // 120s timeout for cold start
+      { maxRetries: 3, retryDelay: 5000 } // Retry with exponential backoff
     );
 
     // Save tokens
@@ -38,7 +40,9 @@ export const authService = {
     const user = await httpClient.post<UserProfile>(
       API_ENDPOINTS.auth.signup,
       signupData,
-      false
+      false,
+      120000, // 120s timeout for cold start
+      { maxRetries: 3, retryDelay: 5000 } // Retry with exponential backoff
     );
 
     logger.info('Signup successful', { userId: user.id });
@@ -57,7 +61,9 @@ export const authService = {
     const response = await httpClient.post<TokenResponse>(
       API_ENDPOINTS.auth.refresh,
       { refresh_token: refreshToken },
-      false
+      false,
+      120000, // 120s timeout for cold start
+      { maxRetries: 3, retryDelay: 5000 } // Retry with exponential backoff
     );
 
     // Update tokens
